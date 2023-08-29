@@ -30,7 +30,7 @@ const initialState: State = {
   score: 0,
   cubeDead: [],
   cubePreviewDead: [],
-  skipCollide: false,
+  skipCollide: 0,
   highScore: 0
 } as State;
 
@@ -48,7 +48,6 @@ const tick = (s: State) => {
     cubePreviewDead: [],
     highScore: s.score > s.highScore ? s.score : s.highScore,
     score: 0,
-
   };
   if(!s.currentCube){
     s = {
@@ -56,15 +55,8 @@ const tick = (s: State) => {
       currentCube: createBlock(s.cubePreview.shape),
       cubePreviewDead: s.cubePreview.cubes,
       cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
-      skipCollide: true
+      skipCollide: 1
     }
-  }
-  if(s.skipCollide){
-    s = {
-      ...s,
-      skipCollide: false
-    }
-    return moveBlock(new Movement(0,false,1,0),s, false);
   }
   return moveBlock(new Movement(0,false,1,0),s, true);
 };

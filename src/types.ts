@@ -27,6 +27,6 @@ type State = Readonly<{
     cubePreviewDead: ReadonlyArray<SVGElement>;
     cubeDead: ReadonlyArray<SVGElement>;
     score: number;
-    skipCollide: boolean
+    skipCollide: number
     highScore: number
   }>;
