@@ -29,4 +29,5 @@ type State = Readonly<{
     score: number;
     skipCollide: number
     highScore: number
+    totalBlockGenerated: number
   }>;

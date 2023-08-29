@@ -52,7 +52,7 @@ const collide = (s: State, b: Blocks, c: Movement): Readonly<{updated: boolean, 
     let hitBottom = selectVerticalMostCube(false,b).y > Constants.GRID_HEIGHT-2;
     if(selectVerticalMostCube(false,b).y > Constants.GRID_HEIGHT-1) s = moveBlock(new Movement(0,false,-1,0),s);
     let numberHit = blockCoords.filter(({x,y}) => searchCoordInList({x:x,y:y+1},globalCoords)).length;
-    return ((hitBottom || numberHit > 0 ) && (s.skipCollide <= 0)) ? handleCollision(s,b) : {
+    return (hitBottom || numberHit > 0 ) ? handleCollision(s,b) : {
         updated: false,
         state: s
     };
@@ -61,6 +61,14 @@ const collide = (s: State, b: Blocks, c: Movement): Readonly<{updated: boolean, 
 // release current block and remove full row and remove empty row
 const handleCollision = (s: State,b: Blocks) => {
     console.log('collision')
+    if(s.skipCollide > 0) return {
+        updated: true,
+        state:{
+            ...s,
+            skipCollide: s.skipCollide -1
+        }
+    }
+
     if(selectVerticalMostCube(false,b).y < 1) return {updated: true, state: {...s, gameEnd: true}}
     let emptyArr: Array<Array<SVGElement>> = [];
     for(let i = 0;i < Constants.GRID_HEIGHT;i++) emptyArr.push([]);
@@ -97,7 +105,7 @@ const handleCollision = (s: State,b: Blocks) => {
         }
 }
 
-const moveBlock = (c: Movement, s: State, isTicking: boolean = false): State => {
+const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): State => {
     if(s.currentCube){
         let result = null;
         let newReC = s.currentCube.relativeCoords.map(coord => rotate(coord,c.clockwise));
@@ -111,7 +119,7 @@ const moveBlock = (c: Movement, s: State, isTicking: boolean = false): State => 
                     s.currentCube.color,
                     newReC),
             cubeDead: [],
-            skipCollide: Math.min(Math.max(0,(s.skipCollide + (isTicking ? -1 : (c.clockwise!= 0 || c.horizontal != 0) ? 1 : 0))),2)
+            skipCollide: forceCollide ? 0 : s.skipCollide
         } as State
         result = collide(newState, newState.currentCube as Blocks ,c);
 
