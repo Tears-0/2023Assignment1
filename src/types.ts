@@ -1,14 +1,14 @@
 export type{ Key, Event, State, Coord };
-export { Control, Blocks };
+export { Control, Blocks, Movement };
 
-type Key = "KeyS" | "KeyA" | "KeyD" | "KeyW" | "Space";
+type Key = "KeyS" | "KeyA" | "KeyD" | "KeyW" | "KeyP" | "Space" | "Escape";
 
 type Event = "keydown" | "keyup" | "keypress";
 
 type Coord = {x: number, y: number};
 
-class Control { constructor(public readonly horizontal: number, public readonly push: boolean, public readonly gravity: number,public readonly clockwise: number) {} }
-
+class Movement { constructor(public readonly horizontal: number, public readonly push: boolean, public readonly gravity: number,public readonly clockwise: number) {} }
+class Control { constructor(public readonly restart: boolean){} }
 class RNG { 
   public next = (n: number) => this.getInterval(0,n);
 
@@ -28,4 +28,5 @@ type State = Readonly<{
     cubeDead: ReadonlyArray<SVGElement>;
     score: number;
     skipCollide: boolean
+    highScore: number
   }>;

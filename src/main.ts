@@ -15,9 +15,9 @@ import "./style.css";
 
 import { fromEvent, interval, merge, from } from "rxjs";
 import { map, filter, scan } from "rxjs/operators";
-import { Blocks, Control, State } from "./types";
+import { Blocks, Control, Movement, State } from "./types";
 import { show, hide, render, gameover } from "./render";
-import { control$, tick$ } from "./observable";
+import { control$, restart$, tick$ } from "./observable";
 import {  collide, createBlock, moveBlock } from "./utility";
 import { Constants } from "./constant";
 
@@ -30,7 +30,8 @@ const initialState: State = {
   score: 0,
   cubeDead: [],
   cubePreviewDead: [],
-  skipCollide: false
+  skipCollide: false,
+  highScore: 0
 } as State;
 
 /**
@@ -40,8 +41,15 @@ const initialState: State = {
  * @returns Updated state
  */
 const tick = (s: State) => {
-  if(s.gameEnd) return s;
+  if(s.gameEnd) return {
+    ...s,
+    cubeAlive: [],
+    cubeDead: [],
+    cubePreviewDead: [],
+    highScore: s.score > s.highScore ? s.score : s.highScore,
+    score: 0,
 
+  };
   if(!s.currentCube){
     s = {
       ...s,
@@ -56,9 +64,9 @@ const tick = (s: State) => {
       ...s,
       skipCollide: false
     }
-    return moveBlock(new Control(0,false,1,0),s, false);
+    return moveBlock(new Movement(0,false,1,0),s, false);
   }
-  return moveBlock(new Control(0,false,1,0),s, true);
+  return moveBlock(new Movement(0,false,1,0),s, true);
 };
 
 /**
@@ -66,19 +74,23 @@ const tick = (s: State) => {
  * should be called here.
  */
 export function main() {
-  
 
-  // Text fields
-  const levelText = document.querySelector("#levelText") as HTMLElement;
-  const scoreText = document.querySelector("#scoreText") as HTMLElement;
-  const highScoreText = document.querySelector("#highScoreText") as HTMLElement;
-
-  const source$ = merge(tick$,control$)
-    .pipe(scan((acc: State,s: number | Control) => {
-      if(s instanceof Control) {
+  const source$ = merge(tick$,control$, restart$  )
+    .pipe(scan((acc: State,s: number | Movement | Control) => {
+      if(s instanceof Movement) {
         return moveBlock(s,acc)
       }
-      else {
+      else if(s instanceof Control){
+        if(s.restart && acc.gameEnd){
+          return {
+            ...acc,
+            gameEnd: false,
+            currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)]),
+            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
+          } as State
+        }
+        return acc
+      } else {
     return tick(acc);
   }
     }, initialState))
@@ -87,7 +99,6 @@ export function main() {
         show(gameover);
       } else {
         render(s);
-        scoreText.innerHTML = s.score.toString()
         hide(gameover);
       }
     });

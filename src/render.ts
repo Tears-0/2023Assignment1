@@ -11,6 +11,11 @@ const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
 HTMLElement;
 const container = document.querySelector("#main") as HTMLElement;
 
+// Text fields
+const levelText = document.querySelector("#levelText") as HTMLElement;
+const scoreText = document.querySelector("#scoreText") as HTMLElement;
+const highScoreText = document.querySelector("#highScoreText") as HTMLElement;
+
 svg.setAttribute("height", `${Viewport.CANVAS_HEIGHT}`);
 svg.setAttribute("width", `${Viewport.CANVAS_WIDTH}`);
 preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
@@ -24,6 +29,14 @@ preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
    */
 const render = (s: State) => {
   // Add blocks to the main grid canvas
+  scoreText.innerHTML = s.score.toString();
+  highScoreText.innerHTML = s.highScore.toString();
+  if(s.cubeAlive.length == 0) {
+    svg.innerHTML = '';
+    svg.appendChild(gameover)
+    preview.innerHTML = '';
+  }
+
   s.cubeDead.forEach(cube => svg.removeChild(cube));
   s.cubeAlive.forEach(cube => svg.appendChild(cube));
   s.cubePreview.cubes.forEach(cube => preview.appendChild(cube))
