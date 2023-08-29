@@ -17,5 +17,6 @@ const left$ = fromKey("KeyA").pipe(map(_=> new Control(-1,false,0,0)));
 const right$ = fromKey("KeyD").pipe(map(_=> new Control(1,false,0,0)));
 const down$ = fromKey("KeyS").pipe(map(_=> new Control(0,false,1,0)));
 const space$ = fromKey("Space").pipe(map(_=> new Control(0,true,0,0)));
+const up$ = fromKey("KeyW").pipe(map(_=> new Control(0,false,0,1)))
 
-const control$ = merge(left$,right$,down$,space$)
+const control$ = merge(left$,right$,down$,space$,up$)

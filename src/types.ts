@@ -1,7 +1,7 @@
 export type{ Key, Event, State, Coord };
 export { Control, Blocks };
 
-type Key = "KeyS" | "KeyA" | "KeyD" | "Space";
+type Key = "KeyS" | "KeyA" | "KeyD" | "KeyW" | "Space";
 
 type Event = "keydown" | "keyup" | "keypress";
 
@@ -16,7 +16,7 @@ class RNG {
 }
 
 class Blocks {
-  constructor(public readonly shape: string, public readonly dimension: [number,number], public readonly cubes: ReadonlyArray<SVGElement>, public readonly color: string, public readonly centerCoord: Coord){}
+  constructor(public readonly shape: string, public readonly dimension: [number,number], public readonly cubes: ReadonlyArray<SVGElement>, public readonly color: string, public readonly relativeCoords: Coord[]){}
 }
 
 type State = Readonly<{
