@@ -13,13 +13,14 @@
  */
 import "./style.css";
 
-import { fromEvent, interval, merge, from } from "rxjs";
-import { map, filter, scan } from "rxjs/operators";
+import { merge } from "rxjs";
+import { scan } from "rxjs/operators";
 import { Blocks, Control, Movement, State } from "./types";
 import { show, hide, render, gameover } from "./render";
 import { control$, restart$, tick$ } from "./observable";
-import {  collide, createBlock, moveBlock } from "./utility";
+import { createBlock } from "./utility";
 import { Constants } from "./constant";
+import { moveBlock } from "./state";
 
 /** State processing */
 const initialState: State = {
@@ -49,7 +50,8 @@ const tick = (s: State) => {
     cubePreviewDead: [],
     highScore: s.score > s.highScore ? s.score : s.highScore,
     score: 0,
-    skipCollide: 5
+    skipCollide: 5,
+    totalBlockGenerated: 1
   };
   if(!s.currentCube){
     s = {
