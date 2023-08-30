@@ -11,6 +11,11 @@ const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
 HTMLElement;
 const container = document.querySelector("#main") as HTMLElement;
 
+// Text fields
+const levelText = document.querySelector("#levelText") as HTMLElement;
+const scoreText = document.querySelector("#scoreText") as HTMLElement;
+const highScoreText = document.querySelector("#highScoreText") as HTMLElement;
+
 svg.setAttribute("height", `${Viewport.CANVAS_HEIGHT}`);
 svg.setAttribute("width", `${Viewport.CANVAS_WIDTH}`);
 preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
@@ -24,14 +29,34 @@ preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
    */
 const render = (s: State) => {
   // Add blocks to the main grid canvas
-  s.cubeDead.forEach(cube => svg.removeChild(cube));
-  s.cubeAlive.forEach(cube => svg.appendChild(cube));
-  s.cubePreview.cubes.forEach(cube => preview.appendChild(cube))
-  s.cubePreviewDead.forEach(cube => {
-    if(preview.children.length > 4)
-    preview.removeChild(cube)
+  scoreText.innerHTML = s.score.toString();
+  highScoreText.innerHTML = s.highScore.toString();
+  if(s.cubeAlive.length == 0) {
+    svg.innerHTML = '';
+    svg.appendChild(gameover)
+    preview.innerHTML = '';
+  }
+
+  s.cubeDead.forEach(data => {
+    let e = document.getElementById(data.id) 
+    e ? svg.removeChild(e): null});
+  s.cubeAlive.forEach(data => {
+    let e = document.getElementById(data.id)
+    e ? moveSVG(data.coord,e) : svg.appendChild(createCube(data.coord,data.colour,data.id))});
+  s.cubePreview.cubes.forEach(data => {
+    let e = document.getElementById(data.id)
+    e ? moveSVG(data.coord,e) : preview.appendChild(createCube(data.coord,data.colour,data.id));
+  })
+  s.cubePreviewDead.forEach(data => {
+    if(preview.children.length > 4){
+    let e = document.getElementById(data.id) 
+    e ? preview.removeChild(e): null
+    }
   });
-  if(s.currentCube) s.currentCube.cubes.forEach(cube => svg.appendChild(cube));
+  if(s.currentCube) s.currentCube.cubes.forEach(data => {
+    let e = document.getElementById(data.id)
+    e ? moveSVG(data.coord,e) : svg.appendChild(createCube(data.coord,data.colour,data.id));
+  });
 };
 
 
@@ -72,10 +97,17 @@ const show = (elem: SVGGraphicsElement) => {
     return elem;
   };
 
-  const createCube = (coord: Coord, color: string) => createSvgElement(svg.namespaceURI, "rect", {
+  const createCube = (coord: Coord, color: string, id: string) => createSvgElement(svg.namespaceURI, "rect", {
+    id: id,
     height: `${Block.HEIGHT}`,
     width: `${Block.WIDTH}`,
     x: `${Block.WIDTH * coord.x}`,
     y: `${Block.HEIGHT * coord.y}`,
     style: `fill: ${color}`,
   });
+
+const moveSVG = (coord: Coord, svg: HTMLElement) => {
+  svg.setAttribute('x',`${Block.WIDTH * coord.x}`);
+  svg.setAttribute('y',`${Block.HEIGHT * coord.y}`);
+  return svg;
+}

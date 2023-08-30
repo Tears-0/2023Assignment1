@@ -13,24 +13,27 @@
  */
 import "./style.css";
 
-import { fromEvent, interval, merge, from } from "rxjs";
-import { map, filter, scan } from "rxjs/operators";
-import { Blocks, Control, State } from "./types";
+import { merge } from "rxjs";
+import { scan } from "rxjs/operators";
+import { Blocks, Control, Movement, State } from "./types";
 import { show, hide, render, gameover } from "./render";
-import { control$, tick$ } from "./observable";
-import {  collide, createBlock, moveBlock } from "./utility";
+import { control$, restart$, tick$ } from "./observable";
+import { createBlock } from "./utility";
 import { Constants } from "./constant";
+import { moveBlock } from "./state";
 
 /** State processing */
 const initialState: State = {
   gameEnd: false,
   cubeAlive: [],
-  currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)]),
-  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
+  currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
+  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
   score: 0,
   cubeDead: [],
   cubePreviewDead: [],
-  skipCollide: false
+  skipCollide: 5,
+  highScore: 0,
+  totalBlockGenerated: 1
 } as State;
 
 /**
@@ -40,25 +43,27 @@ const initialState: State = {
  * @returns Updated state
  */
 const tick = (s: State) => {
-  if(s.gameEnd) return s;
-
+  if(s.gameEnd) return {
+    ...s,
+    cubeAlive: [],
+    cubeDead: [],
+    cubePreviewDead: [],
+    highScore: s.score > s.highScore ? s.score : s.highScore,
+    score: 0,
+    skipCollide: 5,
+    totalBlockGenerated: 1
+  };
   if(!s.currentCube){
     s = {
       ...s,
-      currentCube: createBlock(s.cubePreview.shape),
+      currentCube: createBlock(s.cubePreview.shape,`B${s.totalBlockGenerated}`),
       cubePreviewDead: s.cubePreview.cubes,
-      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
-      skipCollide: true
+      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B${s.totalBlockGenerated+1}`,true),
+      skipCollide: 5,
+      totalBlockGenerated: s.totalBlockGenerated + 1
     }
   }
-  if(s.skipCollide){
-    s = {
-      ...s,
-      skipCollide: false
-    }
-    return moveBlock(new Control(0,false,1,0),s, false);
-  }
-  return moveBlock(new Control(0,false,1,0),s, true);
+  return moveBlock(new Movement(0,false,1,0),s).state;
 };
 
 /**
@@ -66,19 +71,23 @@ const tick = (s: State) => {
  * should be called here.
  */
 export function main() {
-  
 
-  // Text fields
-  const levelText = document.querySelector("#levelText") as HTMLElement;
-  const scoreText = document.querySelector("#scoreText") as HTMLElement;
-  const highScoreText = document.querySelector("#highScoreText") as HTMLElement;
-
-  const source$ = merge(tick$,control$)
-    .pipe(scan((acc: State,s: number | Control) => {
-      if(s instanceof Control) {
-        return moveBlock(s,acc)
+  const source$ = merge(tick$,control$, restart$  )
+    .pipe(scan((acc: State,s: number | Movement | Control) => {
+      if(s instanceof Movement) {
+        return moveBlock(s,acc).state
       }
-      else {
+      else if(s instanceof Control){
+        if(s.restart && acc.gameEnd){
+          return {
+            ...acc,
+            gameEnd: false,
+            currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
+            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
+          } as State
+        }
+        return acc
+      } else {
     return tick(acc);
   }
     }, initialState))
@@ -87,7 +96,6 @@ export function main() {
         show(gameover);
       } else {
         render(s);
-        scoreText.innerHTML = s.score.toString()
         hide(gameover);
       }
     });
