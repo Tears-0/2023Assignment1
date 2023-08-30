@@ -61,7 +61,7 @@ const tick = (s: State) => {
       totalBlockGenerated: s.totalBlockGenerated + 1
     }
   }
-  return moveBlock(new Movement(0,false,1,0),s);
+  return moveBlock(new Movement(0,false,1,0),s).state;
 };
 
 /**
@@ -73,7 +73,7 @@ export function main() {
   const source$ = merge(tick$,control$, restart$  )
     .pipe(scan((acc: State,s: number | Movement | Control) => {
       if(s instanceof Movement) {
-        return moveBlock(s,acc)
+        return moveBlock(s,acc).state
       }
       else if(s instanceof Control){
         if(s.restart && acc.gameEnd){

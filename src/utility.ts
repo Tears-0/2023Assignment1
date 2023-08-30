@@ -30,29 +30,36 @@ const createBlock = (shape: string, id: string, preview: boolean = false): Block
     return new Blocks('1',[3,3],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:-1+yDelta},colour: 'blue'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'blue'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'blue'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:6+xDelta,y:0+yDelta},colour: 'blue'}],'blue',[{x:-1,y:-1},{x:-1,y:0},{x:0,y:0},{x:1,y:0}])
 }
 
-const collide = (s: State, b: Blocks, c: Movement): Readonly<{updated: boolean, state: State}> => {
-    if(!b) return{
+const collide = (s: State, c: Movement): Readonly<{updated: boolean, state: State}> => {
+    if(!s.currentCube) return{
         updated: false,
         state: s
     };
 
     let globalCoords = s.cubeAlive.map(x => x.coord)
-    let blockCoords = b.cubes.map(x => x.coord)
+    let blockCoords = s.currentCube.cubes.map(x => x.coord)
 
-    if(selectHorizontalMostCube(false,b).x > Constants.GRID_WIDTH-1) s = moveBlock(new Movement(-1,false,0,0),s);
-    if(selectHorizontalMostCube(true,b).x <0) s = moveBlock(new Movement(1,false,0,0),s);
+    if(selectHorizontalMostCube(false,s.currentCube).x > Constants.GRID_WIDTH-1) return moveBlock(new Movement(-1,false,0,0),s);
+    if(selectHorizontalMostCube(true,s.currentCube).x <0) return moveBlock(new Movement(1,false,0,0),s);
+    if(selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-1) {
+        let newState = moveBlock(new Movement(0,false,-1,0),s)
+        if(newState.updated) return newState;
+        return {
+            updated: true,
+            state: {
+                ...newState.state,
+                gameEnd: true
+            }
+        }
+    }
 
     let impactV = blockCoords.filter(coord => searchCoordInList(coord,globalCoords)).length;
     if(impactV > 0){
-        return {
-            updated: true,
-            state: moveBlock(revertControl(c),s)
-        }
+        return moveBlock(revertControl(c),s)
     }
-    let hitBottom = selectVerticalMostCube(false,b).y > Constants.GRID_HEIGHT-2;
-    if(selectVerticalMostCube(false,b).y > Constants.GRID_HEIGHT-1) s = moveBlock(new Movement(0,false,-1,0),s);
+    let hitBottom = selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-2;
     let numberHit = blockCoords.filter(({x,y}) => searchCoordInList({x:x,y:y+1},globalCoords)).length;
-    return (hitBottom || numberHit > 0 ) ? handleCollision(s,b) : {
+    return (hitBottom || numberHit > 0 ) ? handleCollision(s,s.currentCube) : {
         updated: false,
         state: s
     };
@@ -71,7 +78,7 @@ const handleCollision = (s: State,b: Blocks) => {
     if(selectVerticalMostCube(false,b).y < 1) return {updated: true, state: {...s, gameEnd: true}}
     let emptyArr: Array<Array<SVGMetaData>> = [];
     for(let i = 0;i < Constants.GRID_HEIGHT;i++) emptyArr.push([]);
-        let allCubes: Array<Array<SVGMetaData>> = s.cubeAlive.concat(b.cubes)
+    let allCubes: Array<Array<SVGMetaData>> = s.cubeAlive.concat(b.cubes)
                     .reduce((acc, cube) =>{
                         acc[cube.coord.y].push(cube);
                         return acc;
@@ -104,7 +111,7 @@ const handleCollision = (s: State,b: Blocks) => {
         }
 }
 
-const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): State => {
+const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): Readonly<{updated: boolean, state: State}>  => {
     if(s.currentCube){
         let result = null;
         let newReC = s.currentCube.relativeCoords.map(coord => rotate(coord,c.clockwise));
@@ -119,14 +126,17 @@ const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): State 
             cubeDead: [],
             skipCollide: forceCollide ? 0 : s.skipCollide
         } as State
-        result = collide(newState, newState.currentCube as Blocks ,c);
+        result = collide(newState,c);
 
         if(c.push){
-            return result.updated ? result.state : moveBlock(new Movement(0,true, 1,0), result.state, true)
+            return moveBlock(new Movement(0,true, 1,0), result.state, true)
         } else {
-            return result ? result.state : s;
+            return result;
         }
-    } return s;
+    } return {
+        updated: false,
+        state: s
+    };
 }
 
 const moveSVG = (control: Readonly<{vertical: number, horizontal: number}>, svg: SVGMetaData) => {
