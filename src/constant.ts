@@ -8,7 +8,7 @@ const Viewport = {
   } as const;
   
   const Constants = {
-    TICK_RATE_MS: 500,
+    TICK_RATE_MS: 50,
     GRID_WIDTH: 10,
     GRID_HEIGHT: 20,
     SCORE_TABLE: [0,100,300,500,800],

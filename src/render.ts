@@ -1,5 +1,6 @@
 import { Blocks, Coord, State } from "./types";
 import { Block, Viewport } from "./constant";
+import { levelCalculate } from "./utility";
 export { show, hide, createSvgElement, render, gameover, createCube };
 /** Rendering (side effects) */
 // Canvas elements
@@ -30,6 +31,7 @@ preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 const render = (s: State) => {
   // Add blocks to the main grid canvas
   scoreText.innerHTML = s.score.toString();
+  levelText.innerHTML = s.level.toString();
   highScoreText.innerHTML = s.highScore.toString();
   if(s.cubeAlive.length == 0) {
     svg.innerHTML = '';

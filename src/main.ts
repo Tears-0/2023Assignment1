@@ -33,7 +33,9 @@ const initialState: State = {
   cubePreviewDead: [],
   skipCollide: 5,
   highScore: 0,
-  totalBlockGenerated: 1
+  totalBlockGenerated: 1,
+  level: 0,
+  rowCleared: 0
 } as State;
 
 /**
@@ -51,8 +53,10 @@ const tick = (s: State) => {
     highScore: s.score > s.highScore ? s.score : s.highScore,
     score: 0,
     skipCollide: 5,
-    totalBlockGenerated: 1
-  };
+    totalBlockGenerated: 1,
+    rowCleared: 0,
+    level: 0
+  }
   if(!s.currentCube){
     s = {
       ...s,
@@ -72,8 +76,8 @@ const tick = (s: State) => {
  */
 export function main() {
 
-  const source$ = merge(tick$,control$, restart$  )
-    .pipe(scan((acc: State,s: number | Movement | Control) => {
+  const source$ = merge(tick$,control$,restart$)
+    .pipe(scan((acc: State,s: number | Movement | Control): State => {
       if(s instanceof Movement) {
         return moveBlock(s,acc).state
       }
@@ -87,9 +91,8 @@ export function main() {
           } as State
         }
         return acc
-      } else {
-    return tick(acc);
-  }
+      } 
+      return (s as number % Math.max(11-acc.level, 1) == 0 ? tick(acc) : acc);
     }, initialState))
     .subscribe((s: State) => {
       if (s.gameEnd) {

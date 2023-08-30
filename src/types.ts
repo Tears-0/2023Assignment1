@@ -33,7 +33,9 @@ type State = Readonly<{
     cubePreviewDead: ReadonlyArray<SVGMetaData>;
     cubeDead: ReadonlyArray<SVGMetaData>;
     score: number;
-    skipCollide: number
-    highScore: number
-    totalBlockGenerated: number
+    skipCollide: number;
+    highScore: number;
+    totalBlockGenerated: number;
+    level: number;
+    rowCleared: number
   }>;

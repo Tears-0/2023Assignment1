@@ -1,6 +1,6 @@
 import { Constants } from "./constant";
 import { Blocks, Movement, SVGMetaData, State } from "./types";
-import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate } from "./utility";
+import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate, levelCalculate } from "./utility";
 export { moveBlock };
 
 const collide = (s: State, c: Movement): Readonly<{updated: boolean, state: State}> => {
@@ -59,7 +59,6 @@ const handleCollision = (s: State) => {
         result: [] as Array<SVGMetaData>,
         deadCube: [] as Array<SVGMetaData>
     })
-
     return {
         updated: true,
         state: {
@@ -68,8 +67,10 @@ const handleCollision = (s: State) => {
             currentCube: null,
             cubeAlive: finalState.result,
             cubeDead: finalState.deadCube,
-            score: s.score + Constants.SCORE_TABLE[finalState.delta]
-        }
+            score: s.score + Constants.SCORE_TABLE[finalState.delta],
+            level: levelCalculate(s.rowCleared + finalState.delta),
+            rowCleared: s.rowCleared + finalState.delta
+        } as State
     }
 }
 

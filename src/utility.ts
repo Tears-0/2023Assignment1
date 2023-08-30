@@ -1,5 +1,5 @@
 import { Blocks, Coord, Movement, SVGMetaData } from "./types";
-export { createBlock, moveSVG, searchCoordInList, selectHorizontalMostCube, selectVerticalMostCube, revertControl, rotate }
+export { createBlock, moveSVG, searchCoordInList, selectHorizontalMostCube, selectVerticalMostCube, revertControl, rotate, levelCalculate }
 
 /** Utility functions */
 const createBlock = (shape: string, id: string, preview: boolean = false): Blocks =>{
@@ -75,3 +75,7 @@ const revertControl = (c: Movement) => new Movement(c.horizontal==0 ? 0 : -c.hor
  * @returns new Coord
  */
 const rotate = (c: Coord, clockwise: number) => clockwise == 0 ? c: clockwise > 0 ? {x: -c.y,y: c.x} : {x: c.y,y: -c.x}
+
+const levelCalculate = (n: number, temp: number = 1): number => getRowForLevel(temp) > n ? temp - 1 : levelCalculate(n, temp + 1);
+
+const getRowForLevel = (level: number): number => level <= 0 ? 0 : (getRowForLevel(level-1) + Math.min(level, 10) * 10);
