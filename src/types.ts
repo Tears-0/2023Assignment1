@@ -1,4 +1,4 @@
-export type{ Key, Event, State, Coord };
+export type{ Key, Event, State, Coord, SVGMetaData };
 export { Control, Blocks, Movement };
 
 type Key = "KeyS" | "KeyA" | "KeyD" | "KeyW" | "KeyP" | "Space" | "Escape";
@@ -16,16 +16,22 @@ class RNG {
 }
 
 class Blocks {
-  constructor(public readonly shape: string, public readonly dimension: [number,number], public readonly cubes: ReadonlyArray<SVGElement>, public readonly color: string, public readonly relativeCoords: Coord[]){}
+  constructor(public readonly shape: string, public readonly dimension: [number,number], public readonly cubes: ReadonlyArray<SVGMetaData>, public readonly color: string, public readonly relativeCoords: Coord[]){}
 }
+
+type SVGMetaData = Readonly<{
+  id: string;
+  coord: Coord;
+  colour: string
+}>
 
 type State = Readonly<{
     gameEnd: boolean;
-    cubeAlive: ReadonlyArray<SVGElement>;
+    cubeAlive: ReadonlyArray<SVGMetaData>;
     currentCube: Blocks | null;
     cubePreview: Blocks;
-    cubePreviewDead: ReadonlyArray<SVGElement>;
-    cubeDead: ReadonlyArray<SVGElement>;
+    cubePreviewDead: ReadonlyArray<SVGMetaData>;
+    cubeDead: ReadonlyArray<SVGMetaData>;
     score: number;
     skipCollide: number
     highScore: number

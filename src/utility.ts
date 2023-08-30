@@ -1,33 +1,33 @@
 import { from, map, filter, reduce, last } from "rxjs";
-import { Blocks, Control, Coord, Movement, State } from "./types";
+import { Blocks, Control, Coord, Movement, SVGMetaData, State } from "./types";
 import { Block } from "./constant";
-import { createCube } from "./render";
+import { createCube, createSvgElement } from "./render";
 import { Constants } from "./constant";
-export { getCoords, translateCoord, moveBlock, createBlock, collide }
+export { moveBlock, createBlock, collide }
 
 /** Utility functions */
-const createBlock = (shape: string, preview: boolean = false): Blocks =>{
+const createBlock = (shape: string, id: string, preview: boolean = false): Blocks =>{
     let xDelta = preview ? -1 : 0;
     let yDelta = preview ? 2 : 0;
     if(shape === 'T'){
-        return new Blocks(shape,[3,3],[createCube({x:3+xDelta,y:0+yDelta},'purple'),createCube({x:4+xDelta,y:0+yDelta},'purple'),createCube({x:5+xDelta,y:0+yDelta},'purple'),createCube({x:4+xDelta,y:-1+yDelta},'purple')],'purple',[{x:-1,y:0},{x:0,y:0},{x:1,y:0},{x:0,y:-1}])
+        return new Blocks(shape,[3,3],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:3+xDelta,y:0+yDelta},colour: 'purple'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'purple'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'purple'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:-1+yDelta},colour: 'purple'}],'purple',[{x:-1,y:0},{x:0,y:0},{x:1,y:0},{x:0,y:-1}])
     }
     else if(shape === 'O'){
-        return new Blocks(shape,[2,2],[createCube({x:4+xDelta,y:0+yDelta},'yellow'),createCube({x:5+xDelta,y:0+yDelta},'yellow'),createCube({x:4+xDelta,y:-1+yDelta},'yellow'),createCube({x:5+xDelta,y:-1+yDelta},'yellow')],'yellow',[{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}])
+        return new Blocks(shape,[2,2],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'yellow'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'yellow'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:-1+yDelta},colour: 'yellow'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:-1+yDelta},colour: 'yellow'}],'yellow',[{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}])
     }
     else if(shape === 'I'){
-        return new Blocks(shape,[4,4],[createCube({x:4+2*xDelta,y:+yDelta},'cyan'),createCube({x:5+2*xDelta,y:0+yDelta},'cyan'),createCube({x:6+2*xDelta,y:+yDelta},'cyan'),createCube({x:7+2*xDelta,y:0+yDelta},'cyan')],'cyan',[{x:-1,y:1},{x:0,y:1},{x:1,y:1},{x:2,y:1}])
+        return new Blocks(shape,[4,4],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+2*xDelta,y:0+yDelta},colour: 'cyan'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:5+2*xDelta,y:0+yDelta},colour: 'cyan'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:6+2*xDelta,y:0+yDelta},colour: 'cyan'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:7+2*xDelta,y:0+yDelta},colour: 'cyan'}],'cyan',[{x:-1,y:1},{x:0,y:1},{x:1,y:1},{x:2,y:1}])
     }
     else if(shape === 'S'){
-        return new Blocks(shape,[3,3],[createCube({x:4+xDelta,y:0+yDelta},'green'),createCube({x:5+xDelta,y:0+yDelta},'green'),createCube({x:5+xDelta,y:-1+yDelta},'green'),createCube({x:6+xDelta,y:-1+yDelta},'green')],'green',[{x:-1,y:0},{x:0,y:0},{x:0,y:-1},{x:1,y:-1}])
+        return new Blocks(shape,[3,3],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'green'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'green'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:-1+yDelta},colour: 'green'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:6+xDelta,y:-1+yDelta},colour: 'green'}],'green',[{x:-1,y:0},{x:0,y:0},{x:0,y:-1},{x:1,y:-1}])
     }
     else if(shape === 'Z'){
-        return new Blocks(shape,[3,3],[createCube({x:4+xDelta,y:-1+yDelta},'red'),createCube({x:5+xDelta,y:-1+yDelta},'red'),createCube({x:5+xDelta,y:0+yDelta},'red'),createCube({x:6+xDelta,y:0+yDelta},'red')],'red',[{x:-1,y:-1},{x:0,y:-1},{x:0,y:0},{x:1,y:0}])
+        return new Blocks(shape,[3,3],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:-1+yDelta},colour: 'red'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:-1+yDelta},colour: 'red'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'red'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:6+xDelta,y:0+yDelta},colour: 'red'}],'red',[{x:-1,y:-1},{x:0,y:-1},{x:0,y:0},{x:1,y:0}])
     }
     else if(shape === 'L'){
-        return new Blocks(shape,[3,3],[createCube({x:4+xDelta,y:0+yDelta},'orange'),createCube({x:5+xDelta,y:0+yDelta},'orange'),createCube({x:6+xDelta,y:0+yDelta},'orange'),createCube({x:6+xDelta,y:-1+yDelta},'orange')],'orange',[{x:-1,y:-0},{x:0,y:0},{x:1,y:0},{x:1,y:-1}])
+        return new Blocks(shape,[3,3],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'orange'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'orange'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:6+xDelta,y:0+yDelta},colour: 'orange'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:6+xDelta,y:-1+yDelta},colour: 'orange'}],'orange',[{x:-1,y:-0},{x:0,y:0},{x:1,y:0},{x:1,y:-1}])
     }
-    return new Blocks('1',[3,3],[createCube({x:4+xDelta,y:-1+yDelta},'blue'),createCube({x:4+xDelta,y:0+yDelta},'blue'),createCube({x:5+xDelta,y:0+yDelta},'blue'),createCube({x:6+xDelta,y:0+yDelta},'blue')],'blue',[{x:-1,y:-1},{x:-1,y:0},{x:0,y:0},{x:1,y:0}])
+    return new Blocks('1',[3,3],[{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:-1+yDelta},colour: 'blue'},{id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'blue'},{id:`${id}-3-${preview ? 'preview' : 'real'}`,coord:{x:5+xDelta,y:0+yDelta},colour: 'blue'},{id:`${id}-4-${preview ? 'preview' : 'real'}`,coord:{x:6+xDelta,y:0+yDelta},colour: 'blue'}],'blue',[{x:-1,y:-1},{x:-1,y:0},{x:0,y:0},{x:1,y:0}])
 }
 
 const collide = (s: State, b: Blocks, c: Movement): Readonly<{updated: boolean, state: State}> => {
@@ -36,8 +36,8 @@ const collide = (s: State, b: Blocks, c: Movement): Readonly<{updated: boolean, 
         state: s
     };
 
-    let globalCoords = s.cubeAlive.map(x => translateCoord(getCoords(x)))
-    let blockCoords = b.cubes.map(x => translateCoord(getCoords(x)))
+    let globalCoords = s.cubeAlive.map(x => x.coord)
+    let blockCoords = b.cubes.map(x => x.coord)
 
     if(selectHorizontalMostCube(false,b).x > Constants.GRID_WIDTH-1) s = moveBlock(new Movement(-1,false,0,0),s);
     if(selectHorizontalMostCube(true,b).x <0) s = moveBlock(new Movement(1,false,0,0),s);
@@ -60,7 +60,6 @@ const collide = (s: State, b: Blocks, c: Movement): Readonly<{updated: boolean, 
 
 // release current block and remove full row and remove empty row
 const handleCollision = (s: State,b: Blocks) => {
-    console.log('collision')
     if(s.skipCollide > 0) return {
         updated: true,
         state:{
@@ -70,17 +69,17 @@ const handleCollision = (s: State,b: Blocks) => {
     }
 
     if(selectVerticalMostCube(false,b).y < 1) return {updated: true, state: {...s, gameEnd: true}}
-    let emptyArr: Array<Array<SVGElement>> = [];
+    let emptyArr: Array<Array<SVGMetaData>> = [];
     for(let i = 0;i < Constants.GRID_HEIGHT;i++) emptyArr.push([]);
-        let allCubes: Array<Array<SVGElement>> = s.cubeAlive.concat(b.cubes)
+        let allCubes: Array<Array<SVGMetaData>> = s.cubeAlive.concat(b.cubes)
                     .reduce((acc, cube) =>{
-                        acc[translateCoord(getCoords(cube)).y].push(cube);
+                        acc[cube.coord.y].push(cube);
                         return acc;
                     },emptyArr);
     
         let delta = 0;
-        let result: Array<SVGElement> = [];
-        let deadCube: Array<SVGElement> = [];
+        let result: Array<SVGMetaData> = [];
+        let deadCube: Array<SVGMetaData> = [];
         let reachedTop = allCubes[0].length > 0;
     
         for(let i=0;i<allCubes.length;i++){
@@ -110,7 +109,6 @@ const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): State 
         let result = null;
         let newReC = s.currentCube.relativeCoords.map(coord => rotate(coord,c.clockwise));
         let arr = s.currentCube.relativeCoords
-        console.log(s.skipCollide)
         let newState = {
             ...s,
             currentCube: new Blocks(s.currentCube.shape, 
@@ -131,27 +129,23 @@ const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): State 
     } return s;
 }
 
-const moveSVG = (control: Readonly<{vertical: number, horizontal: number}>, svg: SVGElement) => {
-    let coord = translateCoord(getCoords(svg));
-    svg.setAttribute('x',`${Block.WIDTH * (coord.x + control.horizontal)}`);
-    svg.setAttribute('y',`${Block.HEIGHT * (coord.y + control.vertical)}`);
-    return svg;
+const moveSVG = (control: Readonly<{vertical: number, horizontal: number}>, svg: SVGMetaData) => {
+    return {
+        ...svg,
+        coord: {
+            x: svg.coord.x + control.horizontal,
+            y: svg.coord.y + control.vertical
+        }
+    }
 }
-
-const getCoords = (svg: SVGElement): Coord => {
-    let x = svg.getAttribute('x');
-    let y = svg.getAttribute('y');
-    return {x: x? x: 0, y: y?y:0} as Coord
-}
-const translateCoord = (coord: Coord) => ({x: Math.round(coord.x/Block.WIDTH), y: Math.round(coord.y/Block.HEIGHT)});
 
 const selectHorizontalMostCube = (isLeft: boolean, b: Blocks) => {
-    let result =  b.cubes.map(x => translateCoord(getCoords(x))).sort((x,y) => x.x-y.x)
+    let result =  b.cubes.map(x => x.coord).sort((x,y) => x.x-y.x)
     if(isLeft) return result[0]
     return result[result.length-1]
 }
 const selectVerticalMostCube = (isTop: boolean, b: Blocks) => {
-    let result =  b.cubes.map(x => translateCoord(getCoords(x))).sort((x,y) => x.y-y.y)
+    let result =  b.cubes.map(x => x.coord).sort((x,y) => x.y-y.y)
     if(isTop) return result[0]
     return result[result.length-1]
 }

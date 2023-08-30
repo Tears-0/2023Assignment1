@@ -25,14 +25,14 @@ import { Constants } from "./constant";
 const initialState: State = {
   gameEnd: false,
   cubeAlive: [],
-  currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)]),
-  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
+  currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
+  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
   score: 0,
   cubeDead: [],
   cubePreviewDead: [],
   skipCollide: 5,
   highScore: 0,
-  totalBlockGenerated: 0
+  totalBlockGenerated: 1
 } as State;
 
 /**
@@ -54,10 +54,11 @@ const tick = (s: State) => {
   if(!s.currentCube){
     s = {
       ...s,
-      currentCube: createBlock(s.cubePreview.shape),
+      currentCube: createBlock(s.cubePreview.shape,`B${s.totalBlockGenerated}`),
       cubePreviewDead: s.cubePreview.cubes,
-      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
-      skipCollide: 5
+      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B${s.totalBlockGenerated+1}`,true),
+      skipCollide: 5,
+      totalBlockGenerated: s.totalBlockGenerated + 1
     }
   }
   return moveBlock(new Movement(0,false,1,0),s);
@@ -79,8 +80,8 @@ export function main() {
           return {
             ...acc,
             gameEnd: false,
-            currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)]),
-            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],true),
+            currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
+            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
           } as State
         }
         return acc
