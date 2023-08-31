@@ -1,4 +1,4 @@
-export type{ Key, Event, State, Coord, SVGMetaData, Status };
+export type{ Key, Event, State, Coord, SVGMetaData, Status, TestResult };
 export { Control, Blocks, Movement };
 
 type Key = "KeyS" | "KeyA" | "KeyD" | "KeyW" | "KeyP" | "Space" | "Escape";
@@ -41,3 +41,8 @@ type State = Readonly<{
     level: number;
     rowCleared: number
   }>;
+
+type TestResult = Readonly<{
+  hitBlock: boolean,
+  hitBottom: boolean
+}>;

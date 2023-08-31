@@ -1,23 +1,34 @@
 import { Constants, WallKickOffSet, WallKickOffSetI } from "./constant";
-import { Blocks, Movement, SVGMetaData, State, Status } from "./types";
+import { Blocks, Movement, SVGMetaData, State, Status, TestResult } from "./types";
 import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate, levelCalculate } from "./utility";
 export { moveBlock };
 
-const testIsValid = (s: State, c: Movement): boolean => {
+const testIsValid = (s: State, c: Movement, beforeMovement: boolean): TestResult => {
     if(s.currentCube && !s.gameEnd) {
         const globalCoords = s.cubeAlive.map(x => x.coord);
-        const blockCoords = s.currentCube.cubes.map(({coord}) => ({x: coord.x + c.horizontal, y: coord.y + c.gravity}));
+        const blockBefore = s.currentCube.cubes.map(({coord}) => ({x: coord.x , y: coord.y}));
+        const blockAfter = s.currentCube.cubes.map(({coord}) => ({x: coord.x + c.horizontal, y: coord.y + c.gravity}));
+        const blockCoords = beforeMovement ? blockBefore : blockAfter;
 
-        blockCoords
-        if(selectHorizontalMostCube(false,blockCoords).x > Constants.GRID_WIDTH-1 || 
-            selectHorizontalMostCube(true,blockCoords).x <0 || 
-            selectVerticalMostCube(false,blockCoords).y > Constants.GRID_HEIGHT-1) return false;
-    
-        const impactV = blockCoords.filter(coord => searchCoordInList(coord,globalCoords)).length;
-        if(impactV > 0) return false;
+        const impact = (selectHorizontalMostCube(false, blockCoords).x > Constants.GRID_WIDTH-1) || 
+            (selectHorizontalMostCube(true, blockCoords).x <0) || 
+            (selectVerticalMostCube(false, blockCoords).y > Constants.GRID_HEIGHT-1) ||
+            (blockCoords.filter(coord => searchCoordInList(coord,globalCoords)).length > 0);
+
+        const bottom = (selectVerticalMostCube(false,blockCoords).y > Constants.GRID_HEIGHT-2) || 
+            (blockCoords.filter(({x,y}) => searchCoordInList({x:x,y:y+1},globalCoords)).length > 0)
+
+        return {
+            hitBlock: impact,
+            hitBottom: bottom
+        } as TestResult;
+        }
+        return {
+            hitBlock: false,
+            hitBottom: false
+        } as TestResult;
     }
-    return true;
-}
+    
 
 /**
  * Function that legalise illegal move and handle collision
@@ -27,36 +38,20 @@ const testIsValid = (s: State, c: Movement): boolean => {
  */
 const collide = (s: State, c: Movement): Status => {
     if(s.currentCube && !s.gameEnd) {
-        const globalCoords = s.cubeAlive.map(x => x.coord);
-        const blockCoords = s.currentCube.cubes.map(x => x.coord);
-    
-        const impactV = blockCoords.filter(coord => searchCoordInList(coord,globalCoords)).length;
-        console.log(impactV)
+        const testResult = testIsValid(s,c,true);
 
-        if(selectHorizontalMostCube(false,s.currentCube).x > Constants.GRID_WIDTH-1 || selectHorizontalMostCube(true,s.currentCube).x <0 || selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-1 || impactV > 0) {
+        if(testResult.hitBlock) {
             if(c.clockwise != 0){
-                if(s.currentCube.shape != 'I'){
-                    const validKick = WallKickOffSet[s.currentCube.quadrant].map(({x,y}) => new Movement(x,false,y,0)).filter(movement => testIsValid(s,movement));
-                    console.log('kick to: ',validKick[0]);
-                    if(validKick.length > 0) return moveBlock(validKick[0],s)
-                } else{
-                    const validKick = WallKickOffSetI[s.currentCube.quadrant].map(({x,y}) => new Movement(x,false,y,0)).filter(movement => testIsValid(s,movement));
-                    console.log('kick to: ',validKick[0]);
-                    if(validKick.length > 0) return moveBlock(validKick[0],s)
-                }
+                console.log(s.currentCube.quadrant)
+                const offsets = s.currentCube.shape != 'I' ? WallKickOffSet[s.currentCube.quadrant] : WallKickOffSetI[s.currentCube.quadrant];
+                const validKick = offsets.map(({x,y}) => new Movement(x,false,y,0)).filter(movement => !testIsValid(s,movement, false).hitBlock);
+
+                if(validKick.length > 0) return moveBlock(validKick[0],s);
             }
-            console.log('revert: ', c, revertControl(c))
             return moveBlock(revertControl(c),s);
         }
 
-        
-        // if(selectHorizontalMostCube(false,s.currentCube).x > Constants.GRID_WIDTH-1) {console.log('shift left');return moveBlock(new Movement(-1,false,0,0),s)};
-        // if(selectHorizontalMostCube(true,s.currentCube).x <0) {console.log('shift right');return moveBlock(new Movement(1,false,0,0),s)};
-        // if(selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-1) return moveBlock(new Movement(0,false,-1,0),s);
-    
-        const hitBottom = selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-2;
-        const numberHit = blockCoords.filter(({x,y}) => searchCoordInList({x:x,y:y+1},globalCoords)).length;
-        if(hitBottom || numberHit > 0) return handleCollision(s);
+        if(testResult.hitBottom) return handleCollision(s);
     }
     return {
         updated: false,
@@ -102,7 +97,8 @@ const handleCollision = (s: State): Status => {
         delta: 0,
         result: [] as Array<SVGMetaData>,
         deadCube: [] as Array<SVGMetaData>
-    })
+    });
+
     return {
         updated: true,
         state: {
@@ -139,10 +135,10 @@ const moveBlock = (c: Movement, s: State): Status  => {
             cubeDead: [],
             skipCollide: c.push ? 0 : s.skipCollide
         } as State 
-        console.log(c)
         const result = collide(newState,c);
         return c.push ? moveBlock(new Movement(0,true, 1,0), result.state) : result;
     } 
+
     return {
         updated: false,
         state: s
