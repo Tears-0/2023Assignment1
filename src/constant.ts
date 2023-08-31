@@ -19,5 +19,19 @@ const Viewport = {
     WIDTH: Viewport.CANVAS_WIDTH / Constants.GRID_WIDTH,
     HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
   };
+
+  //ClockWise Only!
+  const WallKickOffSet = [
+    [{x:0,y:0},{x:-1,y:0},{x:-1,y:-1},{x:0,y:2},{x:-1,y:2}],
+    [{x:0,y:0},{x:-1,y:0},{x:-1,y:1},{x:0,y:-2},{x:-1,y:-2}],
+    [{x:0,y:0},{x:1,y:0},{x:1,y:-1},{x:0,y:2},{x:1,y:2}],
+    [{x:0,y:0},{x:1,y:0},{x:1,y:1},{x:0,y:-2},{x:1,y:-2}]]
+
+  const WallKickOffSetI = [
+    [{x:0,y:0},{x:1,y:0},{x:-2,y:0},{x:1,y:-2},{x:-2,y:1}],
+    [{x:0,y:0},{x:-2,y:0},{x:-1,y:0},{x:-2,y:-1},{x:1,y:2}],
+    [{x:0,y:0},{x:-1,y:0},{x:2,y:0},{x:-1,y:2},{x:2,y:-1}],
+    [{x:0,y:0},{x:2,y:0},{x:-1,y:0},{x:2,y:1},{x:-1,y:-2}]]
+
   
-  export { Constants, Viewport, Block };
+  export { Constants, Viewport, Block, WallKickOffSet, WallKickOffSetI };
