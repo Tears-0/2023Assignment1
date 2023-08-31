@@ -17,7 +17,7 @@ import { merge } from "rxjs";
 import { scan } from "rxjs/operators";
 import { Blocks, Control, Movement, State } from "./types";
 import { show, hide, render, gameover } from "./render";
-import { control$, restart$, tick$ } from "./observable";
+import { control$, setting$, tick$ } from "./observable";
 import { createBlock } from "./utility";
 import { Constants } from "./constant";
 import { moveBlock } from "./state";
@@ -44,7 +44,7 @@ const initialState: State = {
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State) => {
+const tick = (s: State): State => {
   if(s.gameEnd) return {
     ...s,
     cubeAlive: [],
@@ -76,7 +76,7 @@ const tick = (s: State) => {
  */
 export function main() {
 
-  const source$ = merge(tick$,control$,restart$)
+  const source$ = merge(tick$,control$, setting$)
     .pipe(scan((acc: State,s: number | Movement | Control): State => {
       if(s instanceof Movement) {
         return moveBlock(s,acc).state
@@ -93,8 +93,7 @@ export function main() {
         return acc
       } 
       return (s as number % Math.max(11-acc.level, 1) == 0 ? tick(acc) : acc);
-    }, initialState))
-    .subscribe((s: State) => {
+    }, initialState)).subscribe((s: State) => {
       if (s.gameEnd) {
         show(gameover);
       } else {

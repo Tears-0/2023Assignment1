@@ -2,7 +2,7 @@ import { fromEvent, merge, filter, map, interval } from "rxjs";
 import { Key, Control, Movement } from "./types";
 import { Constants } from "./constant";
 
-export { control$, tick$, restart$ };
+export { control$, tick$, setting$ };
 /** Observables */
 /** Determines the rate of time steps */
 const tick$ = interval(Constants.TICK_RATE_MS);
@@ -21,4 +21,6 @@ const up$ = fromKey("KeyW").pipe(map(_=> new Movement(0,false,0,1)));
 
 const control$ = merge(left$,right$,down$,space$,up$)
 
-const restart$ = fromKey("KeyP").pipe(map(_=> new Control(true)))
+const restart$ = fromEvent<MouseEvent>(document, "mousedown").pipe(map(_=> new Control(true,false)));
+const replay$ = fromKey("KeyP").pipe(map(_=> new Control(false,true)));
+const setting$ = merge(restart$, replay$);

@@ -1,9 +1,15 @@
 import { Constants } from "./constant";
-import { Blocks, Movement, SVGMetaData, State } from "./types";
+import { Blocks, Movement, SVGMetaData, State, Status } from "./types";
 import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate, levelCalculate } from "./utility";
 export { moveBlock };
 
-const collide = (s: State, c: Movement): Readonly<{updated: boolean, state: State}> => {
+/**
+ * Function that legalise illegal move and handle collision
+ * @param s State current state
+ * @param c Movement control set provided
+ * @returns Status new state
+ */
+const collide = (s: State, c: Movement): Status => {
     if(s.currentCube && !s.gameEnd) {
         const globalCoords = s.cubeAlive.map(x => x.coord);
         const blockCoords = s.currentCube.cubes.map(x => x.coord);
@@ -24,8 +30,12 @@ const collide = (s: State, c: Movement): Readonly<{updated: boolean, state: Stat
     };
 }
 
-// release current block and remove full row and remove empty row
-const handleCollision = (s: State) => {
+/**
+ * Function that handle collision, release current block, remove full row, score and level calculation
+ * @param s State current state
+ * @returns Status new state
+ */
+const handleCollision = (s: State): Status => {
     if(s.skipCollide > 0) return {
         updated: false,
         state:{
@@ -74,7 +84,13 @@ const handleCollision = (s: State) => {
     }
 }
 
-const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): Readonly<{updated: boolean, state: State}>  => {
+/**
+ * Function to move current block with provided control set
+ * @param c Movement control set provided
+ * @param s State current state
+ * @returns Status new State
+ */
+const moveBlock = (c: Movement, s: State): Status  => {
     if(s.currentCube && !s.gameEnd){
         const newReC = s.currentCube.relativeCoords.map(coord => rotate(coord,c.clockwise));
         const arr = s.currentCube.relativeCoords.map((coord, index) => ({x: newReC[index].x- coord.x, y: newReC[index].y- coord.y}))
@@ -86,9 +102,9 @@ const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): Readon
                     s.currentCube.color,
                     newReC),
             cubeDead: [],
-            skipCollide: forceCollide ? 0 : s.skipCollide
+            skipCollide: c.push ? 0 : s.skipCollide
         } as State,c);
-        return c.push ? moveBlock(new Movement(0,true, 1,0), result.state, true) : result;
+        return c.push ? moveBlock(new Movement(0,true, 1,0), result.state) : result;
     } 
     return {
         updated: false,
