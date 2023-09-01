@@ -56,6 +56,7 @@ const moveSVG = (control: Readonly<{vertical: number, horizontal: number}>, svg:
  * @returns Coord left most coord or right most coord
  */
 const selectHorizontalMostCube = (isLeft: boolean, b: Blocks | ReadonlyArray<Coord>): Coord => {
+    //Sort all coords by x
     const result: ReadonlyArray<Coord> = b instanceof Blocks ? b.cubes.map(x => x.coord).sort((x,y) => x.x-y.x) : b.map(x=>x).sort((x,y) => x.x-y.x);
     if(isLeft) return result[0]
     return result[result.length-1]
@@ -67,6 +68,7 @@ const selectHorizontalMostCube = (isLeft: boolean, b: Blocks | ReadonlyArray<Coo
  * @returns Coord top coord or bottom coord
  */
 const selectVerticalMostCube = (isTop: boolean, b: Blocks | ReadonlyArray<Coord>): Coord => {
+    //Sort all coords by y
     const result: ReadonlyArray<Coord> = b instanceof Blocks ? b.cubes.map(x => x.coord).sort((x,y) => x.y-y.y) : b.map(x=>x).sort((x,y) => x.y-y.y);
     if(isTop) return result[0]
     return result[result.length-1]
@@ -89,6 +91,7 @@ const revertControl = (c: Movement): Movement => new Movement(-c.horizontal,fals
 
 /**
  *  Function that helps rotate the Blocks.
+ *  Equation proposed from: https://en.wikipedia.org/wiki/Rotation_(mathematics)
  * @param c Old Coord
  * @param clockwise Number representing clockwise if 1, counterclockwise if -1, none if 0
  * @returns new Coord
@@ -97,6 +100,7 @@ const rotate = (c: Coord, clockwise: number): Coord => clockwise == 0 ? c: clock
 
 /**
  * Calculate the provided row number belonging level
+ * Data provided by: https://tetris.fandom.com/wiki/Tetris_(NES,_Nintendo)
  * @param rowNumber Number number of cleared row
  * @param temp Number number to get row needed to level up
  * @returns Number level

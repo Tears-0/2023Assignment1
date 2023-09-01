@@ -1,4 +1,4 @@
-import { Blocks, Coord, State } from "./types";
+import { Coord, State } from "./types";
 import { Block, Viewport } from "./constant";
 export { show, hide, createSvgElement, render, gameover, createCube };
 /** Rendering (side effects) */
