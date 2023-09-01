@@ -102,6 +102,7 @@ const handleCollision = (s: State, b: Blocks): Status => {
             ...s,
             gameEnd: reachedTop && finalState.delta==0,
             currentBlock: null,
+            swapped: false,
             cubeAlive: finalState.result,
             cubeDead: finalState.deadCube,
             score: s.score + Constants.SCORE_TABLE[finalState.delta] * s.level,
@@ -130,6 +131,7 @@ const moveBlock = (c: Movement, s: State): Status  => {
                     s.currentBlock.color,
                     newReC,
                     (s.currentBlock.quadrant + c.clockwise) % 4),
+            swapped: c.hold || s.swapped,
             cubeDead: c.hold && !s.swapped ? s.currentBlock.cubes : [],
             totalBlockGenerated: c.hold && !s.swapped ? s.totalBlockGenerated + 1 : s.totalBlockGenerated,
             skipCollide: c.push ? 0 : s.skipCollide

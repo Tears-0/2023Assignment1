@@ -107,22 +107,37 @@ const show = (elem: SVGGraphicsElement) => {
     return elem;
   };
 
-  const createCube = (coord: Coord, color: string, id: string) => createSvgElement(svg.namespaceURI, "rect", {
-    id: id,
-    height: `${Block.HEIGHT}`,
-    width: `${Block.WIDTH}`,
-    x: `${Block.WIDTH * coord.x}`,
-    y: `${Block.HEIGHT * coord.y}`,
-    style: `fill: ${color}`,
-  });
+/**
+ *  Function that create new svg cube with coord, color and id
+ * @param coord Coord coord of the svg element
+ * @param color String color
+ * @param id String id of svg element
+ * @returns SVGElement created svg element representing cube
+ */
+const createCube = (coord: Coord, color: string, id: string) => createSvgElement(svg.namespaceURI, "rect", {
+  id: id,
+  height: `${Block.HEIGHT}`,
+  width: `${Block.WIDTH}`,
+  x: `${Block.WIDTH * coord.x}`,
+  y: `${Block.HEIGHT * coord.y}`,
+  style: `fill: ${color}`,
+});
 
+/**
+ * Set x y of provided html element
+ * @param coord Coord to be set
+ * @param svg HTMLElement svg to be moved
+ */
 const moveSVG = (coord: Coord, svg: HTMLElement) => {
   svg.setAttribute('x',`${Block.WIDTH * coord.x}`);
   svg.setAttribute('y',`${Block.HEIGHT * coord.y}`);
-  return svg;
 }
 
+/**
+ * Set color of a HTMLElement
+ * @param svg HTMLElement svg to be modified
+ * @param color String color 
+ */
 const setColor = (svg: HTMLElement, color: string) =>{
   svg.setAttribute('style', `fill: ${color}`)
-  return svg
 }
