@@ -18,7 +18,7 @@ class RNG {
 }
 
 class Blocks {
-  constructor(public readonly shape: BlockShape, public readonly dimension: [number,number], public readonly cubes: ReadonlyArray<SVGMetaData>, public readonly color: string, public readonly relativeCoords: ReadonlyArray<Coord>, public readonly quadrant: number){}
+  constructor(public readonly shape: BlockShape, public readonly cubes: ReadonlyArray<SVGMetaData>, public readonly color: string, public readonly relativeCoords: ReadonlyArray<Coord>, public readonly quadrant: number){}
 }
 
 type SVGMetaData = Readonly<{

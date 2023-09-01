@@ -32,5 +32,5 @@ const Viewport = {
     WIDTH: Viewport.CANVAS_WIDTH / Constants.GRID_WIDTH,
     HEIGHT: Viewport.CANVAS_HEIGHT / Constants.GRID_HEIGHT,
   };
-  
+
   export { Constants, Viewport, Block };

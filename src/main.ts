@@ -64,7 +64,7 @@ const tick = (s: State): State => {
     }
   }
   //If it is normal game, apply gravity to current block
-  return moveBlock(new Movement(0,false,1,0,false),s).state;
+  return moveBlock(new Movement(0,false,1,0,false))(s).state;
 };
 
 /**
@@ -77,7 +77,7 @@ export function main() {
     .pipe(scan((acc: State,s: number | Movement | Control): State => {
       //If user input, apply to current block
       if(s instanceof Movement) {
-        return moveBlock(s,acc).state
+        return moveBlock(s)(acc).state
       }
       //If user input restart and game has ended, restart game
       else if(s instanceof Control){
