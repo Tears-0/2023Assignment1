@@ -1,6 +1,6 @@
 import { Constants, WallKickOffSet, WallKickOffSetI } from "./constant";
 import { Blocks, Coord, Movement, SVGMetaData, State, Status, TestResult } from "./types";
-import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate, levelCalculate } from "./utility";
+import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate, levelCalculate, createBlock } from "./utility";
 export { moveBlock };
 
 /**
@@ -40,11 +40,10 @@ const testIsValid = (s: State, c: Movement, b:Blocks, beforeMovement: boolean): 
  */
 const collide = (s: State, c: Movement, b: Blocks): Status => {
     const testResult: TestResult = testIsValid(s,c,b,true);
-
     if(testResult.hitBlock) {
         if(c.clockwise != 0){
             const offsets = b.shape != 'I' ? WallKickOffSet[b.quadrant] : WallKickOffSetI[b.quadrant];
-            const validKick = offsets.map(({x,y}) => new Movement(x,false,y,0)).filter(movement => !testIsValid(s,movement,b, false).hitBlock);
+            const validKick = offsets.map(({x,y}) => new Movement(x,false,y,0,false)).filter(movement => !testIsValid(s,movement,b, false).hitBlock);
 
             if(validKick.length > 0) return moveBlock(validKick[0],s);
         }
@@ -102,11 +101,11 @@ const handleCollision = (s: State, b: Blocks): Status => {
         state: {
             ...s,
             gameEnd: reachedTop && finalState.delta==0,
-            currentCube: null,
+            currentBlock: null,
             cubeAlive: finalState.result,
             cubeDead: finalState.deadCube,
-            score: s.score + Constants.SCORE_TABLE[finalState.delta],
-            level: levelCalculate(s.rowCleared + finalState.delta),
+            score: s.score + Constants.SCORE_TABLE[finalState.delta] * s.level,
+            level: levelCalculate(s.rowCleared + finalState.delta) + 1,
             rowCleared: s.rowCleared + finalState.delta
         } as State
     }
@@ -119,22 +118,24 @@ const handleCollision = (s: State, b: Blocks): Status => {
  * @returns Status new State
  */
 const moveBlock = (c: Movement, s: State): Status  => {
-    if(s.currentCube && !s.gameEnd){
-        const newReC: ReadonlyArray<Coord> = s.currentCube.relativeCoords.map(coord => rotate(coord,c.clockwise));
-        const arr: ReadonlyArray<Coord> = s.currentCube.relativeCoords.map((coord, index) => ({x: newReC[index].x- coord.x, y: newReC[index].y- coord.y}))
+    if(s.currentBlock && !s.gameEnd){
+        const newReC: ReadonlyArray<Coord> = s.currentBlock.relativeCoords.map(coord => rotate(coord,c.clockwise));
+        const arr: ReadonlyArray<Coord> = s.currentBlock.relativeCoords.map((coord, index) => ({x: newReC[index].x- coord.x, y: newReC[index].y- coord.y}))
         const newState: State = {
             ...s,
-            currentCube: new Blocks(s.currentCube.shape, 
-                    s.currentCube.dimension, 
-                    s.currentCube.cubes.map((cube,index) => moveSVG({vertical:c.gravity + arr[index].y,horizontal:c.horizontal + arr[index].x},cube)),
-                    s.currentCube.color,
+            blockOnHold: c.hold && !s.swapped ?  createBlock(s.currentBlock.shape,'hold',true) : s.blockOnHold,
+            currentBlock: c.hold && !s.swapped ? (s.blockOnHold ? createBlock(s.blockOnHold.shape, `B${s.totalBlockGenerated}`) : null) : new Blocks(s.currentBlock.shape, 
+                    s.currentBlock.dimension, 
+                    s.currentBlock.cubes.map((cube,index) => moveSVG({vertical:c.gravity + arr[index].y,horizontal:c.horizontal + arr[index].x},cube)),
+                    s.currentBlock.color,
                     newReC,
-                    (s.currentCube.quadrant + c.clockwise) % 4),
-            cubeDead: [],
+                    (s.currentBlock.quadrant + c.clockwise) % 4),
+            cubeDead: c.hold && !s.swapped ? s.currentBlock.cubes : [],
+            totalBlockGenerated: c.hold && !s.swapped ? s.totalBlockGenerated + 1 : s.totalBlockGenerated,
             skipCollide: c.push ? 0 : s.skipCollide
         }
-        const result: Status = collide(newState,c, newState.currentCube as Blocks);
-        return c.push ? moveBlock(new Movement(0,true, 1,0), result.state) : result;
+        const result: Status = newState.currentBlock ? collide(newState,c, newState.currentBlock as Blocks) : {updated: true, state: newState};
+        return c.push ? moveBlock(new Movement(0,true, 1,0,false), result.state) : result;
     } 
 
     return {

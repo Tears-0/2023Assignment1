@@ -1,12 +1,13 @@
 import { Blocks, Coord, State } from "./types";
 import { Block, Viewport } from "./constant";
-import { levelCalculate } from "./utility";
 export { show, hide, createSvgElement, render, gameover, createCube };
 /** Rendering (side effects) */
 // Canvas elements
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
 HTMLElement;
 const preview = document.querySelector("#svgPreview") as SVGGraphicsElement &
+HTMLElement;
+const holdBar = document.querySelector("#svgHold") as SVGGraphicsElement &
 HTMLElement;
 const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
 HTMLElement;
@@ -21,6 +22,8 @@ svg.setAttribute("height", `${Viewport.CANVAS_HEIGHT}`);
 svg.setAttribute("width", `${Viewport.CANVAS_WIDTH}`);
 preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
 preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
+holdBar.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
+holdBar.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 /**
    * Renders the current state to the canvas.
    *
@@ -39,6 +42,11 @@ const render = (s: State) => {
     preview.innerHTML = '';
   }
 
+  s.blockOnHold?.cubes.forEach(data => {
+    let e = document.getElementById(data.id)
+    e ? moveSVG(data.coord,e) : holdBar.appendChild(createCube(data.coord,data.colour,data.id));
+    e ? setColor(e, data.colour) : null
+  })
   s.cubeDead.forEach(data => {
     let e = document.getElementById(data.id) 
     e ? svg.removeChild(e): null});
@@ -55,7 +63,7 @@ const render = (s: State) => {
     e ? preview.removeChild(e): null
     }
   });
-  if(s.currentCube) s.currentCube.cubes.forEach(data => {
+  if(s.currentBlock) s.currentBlock.cubes.forEach(data => {
     let e = document.getElementById(data.id)
     e ? moveSVG(data.coord,e) : svg.appendChild(createCube(data.coord,data.colour,data.id));
   });
@@ -112,4 +120,9 @@ const moveSVG = (coord: Coord, svg: HTMLElement) => {
   svg.setAttribute('x',`${Block.WIDTH * coord.x}`);
   svg.setAttribute('y',`${Block.HEIGHT * coord.y}`);
   return svg;
+}
+
+const setColor = (svg: HTMLElement, color: string) =>{
+  svg.setAttribute('style', `fill: ${color}`)
+  return svg
 }

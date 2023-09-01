@@ -26,15 +26,17 @@ import { moveBlock } from "./state";
 const initialState: State = {
   gameEnd: false,
   cubeAlive: [],
-  currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
-  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
+  currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
+  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`,true),
+  blockOnHold: null,
+  swapped: false,
   score: 0,
   cubeDead: [],
   cubePreviewDead: [],
   skipCollide: 5,
   highScore: 0,
   totalBlockGenerated: 1,
-  level: 0,
+  level: 1,
   rowCleared: 0
 } as State;
 
@@ -57,17 +59,17 @@ const tick = (s: State): State => {
     rowCleared: 0,
     level: 0
   }
-  if(!s.currentCube){
+  if(!s.currentBlock){
     s = {
       ...s,
-      currentCube: createBlock(s.cubePreview.shape,`B${s.totalBlockGenerated}`),
+      currentBlock: createBlock(s.cubePreview.shape,`B${s.totalBlockGenerated}`),
       cubePreviewDead: s.cubePreview.cubes,
-      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B${s.totalBlockGenerated+1}`,true),
+      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B${s.totalBlockGenerated}`,true),
       skipCollide: 5,
       totalBlockGenerated: s.totalBlockGenerated + 1
     }
   }
-  return moveBlock(new Movement(0,false,1,0),s).state;
+  return moveBlock(new Movement(0,false,1,0,false),s).state;
 };
 
 /**

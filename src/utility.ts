@@ -85,7 +85,7 @@ const searchCoordInList = (c: Coord, arr: ReadonlyArray<Coord>): Boolean => arr.
  * @param c Movement
  * @returns An inverted movement
  */
-const revertControl = (c: Movement): Movement => new Movement(-c.horizontal,false,-c.gravity, -c.clockwise);
+const revertControl = (c: Movement): Movement => new Movement(-c.horizontal,false,-c.gravity, -c.clockwise, false);
 
 /**
  *  Function that helps rotate the Blocks.
