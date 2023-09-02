@@ -1,4 +1,4 @@
-import { Blocks, Coord, State } from "./types";
+import { Coord, State } from "./types";
 import { Block, Viewport } from "./constant";
 export { show, hide, createSvgElement, render, gameover, createCube };
 /** Rendering (side effects) */
@@ -6,6 +6,8 @@ export { show, hide, createSvgElement, render, gameover, createCube };
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
 HTMLElement;
 const preview = document.querySelector("#svgPreview") as SVGGraphicsElement &
+HTMLElement;
+const holdBar = document.querySelector("#svgHold") as SVGGraphicsElement &
 HTMLElement;
 const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
 HTMLElement;
@@ -20,6 +22,8 @@ svg.setAttribute("height", `${Viewport.CANVAS_HEIGHT}`);
 svg.setAttribute("width", `${Viewport.CANVAS_WIDTH}`);
 preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
 preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
+holdBar.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
+holdBar.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 /**
    * Renders the current state to the canvas.
    *
@@ -30,6 +34,7 @@ preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 const render = (s: State) => {
   // Add blocks to the main grid canvas
   scoreText.innerHTML = s.score.toString();
+  levelText.innerHTML = s.level.toString();
   highScoreText.innerHTML = s.highScore.toString();
   if(s.cubeAlive.length == 0) {
     svg.innerHTML = '';
@@ -37,25 +42,35 @@ const render = (s: State) => {
     preview.innerHTML = '';
   }
 
+  s.blockOnHold ? s.blockOnHold.cubes.forEach(data => {
+    let e = document.getElementById(data.id)
+    e ? moveSVG(data.coord)(e) : holdBar.appendChild(createCube(data.coord)(data.colour)(data.id));
+    e ? setColor(e)(data.colour) : null
+  }) : holdBar.innerHTML = '';
+
   s.cubeDead.forEach(data => {
     let e = document.getElementById(data.id) 
     e ? svg.removeChild(e): null});
+
   s.cubeAlive.forEach(data => {
     let e = document.getElementById(data.id)
-    e ? moveSVG(data.coord,e) : svg.appendChild(createCube(data.coord,data.colour,data.id))});
+    e ? moveSVG(data.coord)(e) : svg.appendChild(createCube(data.coord)(data.colour)(data.id))});
+
   s.cubePreview.cubes.forEach(data => {
     let e = document.getElementById(data.id)
-    e ? moveSVG(data.coord,e) : preview.appendChild(createCube(data.coord,data.colour,data.id));
-  })
+    !e ?  preview.appendChild(createCube(data.coord)(data.colour)(data.id)) : null;
+  });
+
   s.cubePreviewDead.forEach(data => {
     if(preview.children.length > 4){
     let e = document.getElementById(data.id) 
     e ? preview.removeChild(e): null
     }
   });
-  if(s.currentCube) s.currentCube.cubes.forEach(data => {
+
+  if(s.currentBlock) s.currentBlock.cubes.forEach(data => {
     let e = document.getElementById(data.id)
-    e ? moveSVG(data.coord,e) : svg.appendChild(createCube(data.coord,data.colour,data.id));
+    e ? moveSVG(data.coord)(e) : svg.appendChild(createCube(data.coord)(data.colour)(data.id));
   });
 };
 
@@ -97,17 +112,35 @@ const show = (elem: SVGGraphicsElement) => {
     return elem;
   };
 
-  const createCube = (coord: Coord, color: string, id: string) => createSvgElement(svg.namespaceURI, "rect", {
-    id: id,
-    height: `${Block.HEIGHT}`,
-    width: `${Block.WIDTH}`,
-    x: `${Block.WIDTH * coord.x}`,
-    y: `${Block.HEIGHT * coord.y}`,
-    style: `fill: ${color}`,
-  });
+/**
+ *  Function that create new svg cube with coord, color and id
+ * @param coord Coord coord of the svg element
+ * @param color String color
+ * @param id String id of svg element
+ * @returns SVGElement created svg element representing cube
+ */
+const createCube = (coord: Coord) => (color: string) => (id: string): SVGElement => createSvgElement(svg.namespaceURI, "rect", {
+  id: id,
+  height: `${Block.HEIGHT}`,
+  width: `${Block.WIDTH}`,
+  x: `${Block.WIDTH * coord.x}`,
+  y: `${Block.HEIGHT * coord.y}`,
+  style: `fill: ${color}`,
+});
 
-const moveSVG = (coord: Coord, svg: HTMLElement) => {
+/**
+ * Set x y of provided html element
+ * @param coord Coord to be set
+ * @param svg HTMLElement svg to be moved
+ */
+const moveSVG = (coord: Coord) => (svg: HTMLElement) => {
   svg.setAttribute('x',`${Block.WIDTH * coord.x}`);
   svg.setAttribute('y',`${Block.HEIGHT * coord.y}`);
-  return svg;
 }
+
+/**
+ * Set color of a HTMLElement
+ * @param svg HTMLElement svg to be modified
+ * @param color String color 
+ */
+const setColor = (svg: HTMLElement) => (color: string) => svg.setAttribute('style', `fill: ${color}`);

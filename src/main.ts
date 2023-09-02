@@ -13,11 +13,10 @@
  */
 import "./style.css";
 
-import { merge } from "rxjs";
-import { scan } from "rxjs/operators";
-import { Blocks, Control, Movement, State } from "./types";
+import { merge, scan } from "rxjs";
+import { Control, Movement, State } from "./types";
 import { show, hide, render, gameover } from "./render";
-import { control$, restart$, tick$ } from "./observable";
+import { control$, setting$, tick$ } from "./observable";
 import { createBlock } from "./utility";
 import { Constants } from "./constant";
 import { moveBlock } from "./state";
@@ -26,14 +25,18 @@ import { moveBlock } from "./state";
 const initialState: State = {
   gameEnd: false,
   cubeAlive: [],
-  currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
-  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
+  currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B0`)(),
+  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B0`)(true),
+  blockOnHold: null,
+  swapped: false,
   score: 0,
   cubeDead: [],
   cubePreviewDead: [],
   skipCollide: 5,
   highScore: 0,
-  totalBlockGenerated: 1
+  totalBlockGenerated: 1,
+  level: 1,
+  rowCleared: 0
 } as State;
 
 /**
@@ -42,28 +45,26 @@ const initialState: State = {
  * @param s Current state
  * @returns Updated state
  */
-const tick = (s: State) => {
+const tick = (s: State): State => {
   if(s.gameEnd) return {
-    ...s,
-    cubeAlive: [],
-    cubeDead: [],
-    cubePreviewDead: [],
+    ...initialState,
+    gameEnd: true,
     highScore: s.score > s.highScore ? s.score : s.highScore,
-    score: 0,
-    skipCollide: 5,
-    totalBlockGenerated: 1
-  };
-  if(!s.currentCube){
+  }
+  //If currentBlock is null, create a new one
+  if(!s.currentBlock){
     s = {
       ...s,
-      currentCube: createBlock(s.cubePreview.shape,`B${s.totalBlockGenerated}`),
+      //Here use preview shape
+      currentBlock: createBlock(s.cubePreview.shape)(`B${s.totalBlockGenerated}`)(),
       cubePreviewDead: s.cubePreview.cubes,
-      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B${s.totalBlockGenerated+1}`,true),
+      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B${s.totalBlockGenerated}`)(true),
       skipCollide: 5,
       totalBlockGenerated: s.totalBlockGenerated + 1
     }
   }
-  return moveBlock(new Movement(0,false,1,0),s).state;
+  //If it is normal game, apply gravity to current block
+  return moveBlock(new Movement(0,false,1,0,false))(s).state;
 };
 
 /**
@@ -72,26 +73,27 @@ const tick = (s: State) => {
  */
 export function main() {
 
-  const source$ = merge(tick$,control$, restart$  )
-    .pipe(scan((acc: State,s: number | Movement | Control) => {
+  const source$ = merge(tick$,control$, setting$)
+    .pipe(scan((acc: State,s: number | Movement | Control): State => {
+      //If user input, apply to current block
       if(s instanceof Movement) {
-        return moveBlock(s,acc).state
+        return moveBlock(s)(acc).state
       }
+      //If user input restart and game has ended, restart game
       else if(s instanceof Control){
         if(s.restart && acc.gameEnd){
           return {
             ...acc,
             gameEnd: false,
-            currentCube: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
-            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
+            currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B0`)(),
+            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B1`)(true),
           } as State
         }
         return acc
-      } else {
-    return tick(acc);
-  }
-    }, initialState))
-    .subscribe((s: State) => {
+      } 
+      //Else see should we tick, if current level is higher, faster it ticks.
+      return (s as number % Math.max(11-acc.level, 1) == 0 ? tick(acc) : acc);
+    }, initialState)).subscribe((s: State) => {
       if (s.gameEnd) {
         show(gameover);
       } else {

@@ -1,96 +1,145 @@
 import { Constants } from "./constant";
-import { Blocks, Movement, SVGMetaData, State } from "./types";
-import { selectHorizontalMostCube, selectVerticalMostCube, searchCoordInList, revertControl, moveSVG, rotate } from "./utility";
+import { Blocks, Coord, Movement, SVGMetaData, State, Status, TestResult } from "./types";
+import { selectMostCube, searchCoordInList, revertControl, moveSVG, levelCalculate, createBlock, applyMovement, getCoords } from "./utility";
 export { moveBlock };
 
-const collide = (s: State, c: Movement): Readonly<{updated: boolean, state: State}> => {
-    if(s.currentCube && !s.gameEnd) {
-        const globalCoords = s.cubeAlive.map(x => x.coord);
-        const blockCoords = s.currentCube.cubes.map(x => x.coord);
-        if(selectHorizontalMostCube(false,s.currentCube).x > Constants.GRID_WIDTH-1) return moveBlock(new Movement(-1,false,0,0),s);
-        if(selectHorizontalMostCube(true,s.currentCube).x <0) return moveBlock(new Movement(1,false,0,0),s);
-        if(selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-1) return moveBlock(new Movement(0,false,-1,0),s);
-    
-        const impactV = blockCoords.filter(coord => searchCoordInList(coord,globalCoords)).length;
-        if(impactV > 0) return moveBlock(revertControl(c),s);
-    
-        const hitBottom = selectVerticalMostCube(false,s.currentCube).y > Constants.GRID_HEIGHT-2;
-        const numberHit = blockCoords.filter(({x,y}) => searchCoordInList({x:x,y:y+1},globalCoords)).length;
-        if(hitBottom || numberHit > 0) return handleCollision(s);
+
+/**
+ * Function to move current block with provided control set
+ * @param c Movement control set provided
+ * @param s State current state
+ * @returns Status new State
+ */
+const moveBlock = (c: Movement) => (s: State): Status  => {
+    if(s.currentBlock && !s.gameEnd){
+        //Apply the movement provided
+        const newState: State = {
+            ...s,
+            //Always create new block while swapping current block and block on hold with same shape
+            blockOnHold: c.hold && !s.swapped ?  createBlock(s.currentBlock.shape)('hold')(true) : s.blockOnHold,
+            currentBlock: c.hold && !s.swapped ? (s.blockOnHold ? createBlock(s.blockOnHold.shape)(`B${s.totalBlockGenerated}`)() : null) : applyMovement(s.currentBlock)(c),
+            swapped: c.hold || s.swapped,
+            cubeDead: c.hold && !s.swapped ? s.currentBlock.cubes : [],
+            totalBlockGenerated: c.hold && !s.swapped ? s.totalBlockGenerated + 1 : s.totalBlockGenerated,
+            skipCollide: c.push ? 0 : s.skipCollide
+        }
+        //Indicates whether is the movement valid
+        const result: Status = newState.currentBlock ? collide(newState)(c)(newState.currentBlock as Blocks) : {updated: true, state: newState};
+        //If it is to push, move the block further downward.
+        return c.push ? moveBlock(new Movement(0,true, 1,0,false))(result.state) : result;
+    } 
+
+    return {
+        updated: false,
+        state: s
+    };
+}   
+
+/**
+ * Function that legalise illegal move and handle collision
+ * @param s State current state
+ * @param c Movement control set provided
+ * @returns Status new state
+ */
+const collide = (s: State) => (c: Movement) =>  (b: Blocks): Status => {
+    const testResult: TestResult = testIsValid(s)(b);
+    //If the block has impact on other block or wall and is rotating, try wallkick 
+    if(testResult.hitBlock) {
+        if(c.clockwise != 0){
+            const validKick: ReadonlyArray<Movement> = (b.shape != 'I' ? Constants.WALL_KICK_OFFSET[b.quadrant] : Constants.WALL_KICK_OFFSET_I[b.quadrant])
+                .map(({x,y}) => new Movement(x,false,y,0,false))
+                .filter(movement => !testIsValid(s)(applyMovement(b)(movement)).hitBlock);
+
+            if(validKick.length > 0) return moveBlock(validKick[0])(s);
+        }
+        //If unable to kick, revert control.
+        return moveBlock(revertControl(c))(s);
     }
+    if(testResult.hitBottom) return handleCollision(s)(b);
+
     return {
         updated: false,
         state: s
     };
 }
 
-// release current block and remove full row and remove empty row
-const handleCollision = (s: State) => {
+/**
+ * Function that determines that a block is in illegal position (Out of bound, duplicate position).
+ * @param s State current state
+ * @param c Movement previous or next movement to be apply on current block
+ * @param b Blocks current block
+ * @param beforeMovement Boolean is c provided applied?
+ * @returns TestResult indicates block is out of bound, hit another block or hit bottom
+ */
+const testIsValid = (s: State) => (b:Blocks): TestResult => {
+    const globalCoords: ReadonlyArray<Coord> = getCoords(s.cubeAlive);
+    const blockCoords: ReadonlyArray<Coord> = getCoords(b);
+
+    //Indicates blocks has been out of bound, or has same position as other block
+    const impact: boolean = (selectMostCube(false)(b)(c=>c.x) > Constants.GRID_WIDTH-1) || 
+        (selectMostCube(true)(b)(c=>c.x) <0) || 
+        (selectMostCube(false)(b)(c=>c.y) > Constants.GRID_HEIGHT-1) ||
+        (blockCoords.filter(searchCoordInList(globalCoords)).length > 0);
+
+    //Indicates blocks has something else bottom.
+    const bottom: boolean = (selectMostCube(false)(b)(x=>x.y) > Constants.GRID_HEIGHT-2) || 
+        (blockCoords.filter(({x,y}) => searchCoordInList(globalCoords)({x:x,y:y+1})).length > 0);
+
+    return {
+        hitBlock: impact,
+        hitBottom: bottom
+    } as TestResult;
+}
+
+/**
+ * Function that handle collision, release current block, remove full row, score and level calculation
+ * @param s State current state
+ * @returns Status new state
+ */
+const handleCollision = (s: State) => (b: Blocks): Status => {
     if(s.skipCollide > 0) return {
         updated: false,
         state:{
             ...s,
             skipCollide: s.skipCollide -1
         }
-    }
+    } as Status;
+    //If collide at roof, game end. 
+    if(selectMostCube(false)(b)(c=>c.y) < 1) return {updated: true, state: {...s, gameEnd: true}}
 
-    if(selectVerticalMostCube(false,s.currentCube as Blocks).y < 1) return {updated: true, state: {...s, gameEnd: true}}
+    //Map all cubes into 2d array by its position.
+    const allCubes: ReadonlyArray<ReadonlyArray<SVGMetaData>> = s.cubeAlive.concat(b.cubes)
+                    .reduce((acc, cube) =>
+                        acc.map((arr,index) => index == Constants.GRID_HEIGHT - cube.coord.y - 1 ? arr.concat([cube]) : arr),
+                        Array.from({length: Constants.GRID_HEIGHT},() => []) as ReadonlyArray<ReadonlyArray<SVGMetaData>>);
 
-    const allCubes: Array<Array<SVGMetaData>> = s.cubeAlive.concat(s.currentCube?.cubes as Array<SVGMetaData>)
-                    .reduce((acc, cube) =>{
-                        acc[Constants.GRID_HEIGHT - cube.coord.y - 1].push(cube);
-                        return acc;
-                    },Array.from({length: Constants.GRID_HEIGHT},() => []) as Array<Array<SVGMetaData>>);
+    const reachedTop: boolean = allCubes[Constants.GRID_HEIGHT-1].length > 0;
     
-    const reachedTop = allCubes[Constants.GRID_HEIGHT-1].length > 0;
-    
-    const finalState = allCubes.reduce((acc,arr: Array<SVGMetaData>) => {
-        if(arr.length >= 10) return{
+    //Check all row if has 10 cubes, remove it from grid
+    const finalState: Readonly<{delta: number, result: ReadonlyArray<SVGMetaData>, deadCube: ReadonlyArray<SVGMetaData>}> = 
+        allCubes.reduce((acc,arr: ReadonlyArray<SVGMetaData>) => ({
             ...acc,
-            delta: acc.delta + 1,
-            deadCube: acc.deadCube.concat(arr) 
-        }
-        return {
-            ...acc,
-            result: acc.result.concat(arr.map(element => moveSVG({vertical: acc.delta,horizontal: 0},element)))
-        }
-    },{
-        delta: 0,
-        result: [] as Array<SVGMetaData>,
-        deadCube: [] as Array<SVGMetaData>
-    })
+            delta: arr.length >= 10 ? acc.delta + 1 : acc.delta,
+            deadCube: arr.length >= 10 ? acc.deadCube.concat(arr) : acc.deadCube,
+            result: arr.length >= 10 ? acc.result : acc.result.concat(arr.map(element => moveSVG({vertical: acc.delta,horizontal: 0})(element)))
+        }),{
+            delta: 0,
+            result: [] as ReadonlyArray<SVGMetaData>,
+            deadCube: [] as ReadonlyArray<SVGMetaData>
+        });
 
     return {
         updated: true,
         state: {
             ...s,
             gameEnd: reachedTop && finalState.delta==0,
-            currentCube: null,
+            currentBlock: null,
+            swapped: false,
             cubeAlive: finalState.result,
             cubeDead: finalState.deadCube,
-            score: s.score + Constants.SCORE_TABLE[finalState.delta]
-        }
+            score: s.score + Constants.SCORE_TABLE[finalState.delta] * s.level,
+            level: levelCalculate(s.rowCleared + finalState.delta)() + 1,
+            rowCleared: s.rowCleared + finalState.delta
+        } as State
     }
-}
-
-const moveBlock = (c: Movement, s: State, forceCollide: boolean = false): Readonly<{updated: boolean, state: State}>  => {
-    if(s.currentCube && !s.gameEnd){
-        const newReC = s.currentCube.relativeCoords.map(coord => rotate(coord,c.clockwise));
-        const arr = s.currentCube.relativeCoords.map((coord, index) => ({x: newReC[index].x- coord.x, y: newReC[index].y- coord.y}))
-        const result = collide({
-            ...s,
-            currentCube: new Blocks(s.currentCube.shape, 
-                    s.currentCube.dimension, 
-                    s.currentCube.cubes.map((cube,index) => moveSVG({vertical:c.gravity + arr[index].y,horizontal:c.horizontal + arr[index].x},cube)),
-                    s.currentCube.color,
-                    newReC),
-            cubeDead: [],
-            skipCollide: forceCollide ? 0 : s.skipCollide
-        } as State,c);
-        return c.push ? moveBlock(new Movement(0,true, 1,0), result.state, true) : result;
-    } 
-    return {
-        updated: false,
-        state: s
-    };
 }
