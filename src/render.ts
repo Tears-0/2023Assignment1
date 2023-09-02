@@ -33,44 +33,44 @@ const modifyMove = (x: SVGMetaData) => modifySVG(moveSVG(x.coord));
  *
  * In MVC terms, this updates the View using the Model.
  *
- * @param s Current state
+ * @param state Current state
  */
-const render = (s: State) => {
+const render = (state: State) => {
   // Add blocks to the main grid canvas
-  scoreText.innerHTML = s.score.toString();
-  levelText.innerHTML = s.level.toString();
-  highScoreText.innerHTML = s.highScore.toString();
+  scoreText.innerHTML = state.score.toString();
+  levelText.innerHTML = state.level.toString();
+  highScoreText.innerHTML = state.highScore.toString();
 
-  if (s.cubeAlive.length == 0) {
+  if (state.cubeAlive.length == 0) {
     svg.innerHTML = '';
     svg.appendChild(gameover)
     preview.innerHTML = '';
   }
 
   //Render block on hold
-  s.blockOnHold ? 
-    s.blockOnHold.cubes.forEach(
+  state.blockOnHold ? 
+    state.blockOnHold.cubes.forEach(
       data => modifySVG(DOUBLE(moveSVG(data.coord))(setColor(data.colour)))(x => holdBar.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : 
     holdBar.innerHTML = '';
 
-  s.cubeDead.forEach(modifySVG(x => svg.removeChild(x))(I));
+  state.cubeDead.forEach(modifySVG(x => svg.removeChild(x))(I));
 
-  s.cubeAlive.forEach(
+  state.cubeAlive.forEach(
     data => modifyMove(data)(x => svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data));
 
-  s.cubePreview.cubes.forEach(modifySVG(I)(x => preview.appendChild(createCube(x.coord)(x.colour)(x.id))));
+  state.cubePreview.cubes.forEach(modifySVG(I)(x => preview.appendChild(createCube(x.coord)(x.colour)(x.id))));
 
-  s.cubePreviewDead.forEach(modifySVG(x => preview.children.length > 4 ? preview.removeChild(x) : I(x))(I));
+  state.cubePreviewDead.forEach(modifySVG(x => preview.children.length > 4 ? preview.removeChild(x) : I(x))(I));
 
-  s.currentBlock ? 
-    s.currentBlock.cubes.forEach(
+  state.currentBlock ? 
+    state.currentBlock.cubes.forEach(
       data => modifyMove(data)(x => svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : 
     null;
 };
 
-const modifySVG = (f1: (s: HTMLElement) => any) => (f2: (s: SVGMetaData) => any) => (data: SVGMetaData) => {
+const modifySVG = <T,U>(fIfPresent: (state: HTMLElement) => T) => (fIfAbsent: (state: SVGMetaData) => U) => (data: SVGMetaData) => {
   let element = document.getElementById(data.id);
-  element ? f1(element) : f2(data);
+  element ? fIfPresent(element) : fIfAbsent(data);
 };
 
 /**

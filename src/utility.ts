@@ -1,4 +1,4 @@
-import { Blocks, Coord, Movement, RNG, SVGMetaData } from "./types";
+import { Blocks, Coord, Movement, SVGMetaData } from "./types";
 export { createBlock, moveSVG, searchCoordInList, selectMostCube, revertControl, rotate, levelCalculate, getCoords, applyMovement, I, K, randomSelect, DOUBLE };
 
 /** Utility functions */
@@ -99,8 +99,28 @@ const moveSVG = (control: Readonly < {
  * @param f Mapping function
  * @returns Coord left most coord or right most coord
  */
-const selectMostCube = (is: boolean) => (b: Blocks) => (f: (c: Coord) => number): number =>
-    f(getCoords(b).reduce((acc: Coord, data: Coord) => selectiveChoosing(is)(acc)(data)(f)));
+const selectMostCube = (is: boolean) => (block: Blocks) => (f: (coord: Coord) => number): number =>
+    f(getCoords(block).reduce((acc: Coord, data: Coord) => selectiveChoosing(is)(acc)(data)(f)));
+
+/**
+ * To select most top or most left cube
+ * @param is isTop or isLeft
+ * @param c1 Coord Coord 1
+ * @param c2 Coord Coord 2
+ * @param f function that map coord into number
+ * @returns Coord left most? or top? coord
+ */
+// is ? (f(c1) < f(c2) ? c2 : c1) : (f(c1) > f(c2) ? c2 : c1)
+const selectiveChoosing = (is: boolean) => (coord1: Coord) => (coord2: Coord) => (f: (coord: Coord) => Number): Coord =>
+    xor(is)(f(coord1) > f(coord2)) ? coord2 : coord1
+
+/**
+ * XOR gate
+ * @param b1 boolean 1
+ * @param b2 boolean 2
+ * @returns boolean b1 xor b2
+ */
+const xor = (boolean1: boolean) => (boolean2: boolean) => (boolean1 || !boolean2) && (!boolean1 || boolean2);
 
 /**
  * A search function indicating whether a coord is in a list.
@@ -109,10 +129,10 @@ const selectMostCube = (is: boolean) => (b: Blocks) => (f: (c: Coord) => number)
  * @returns true if coord is in the list, false otherwise.
  */
 const searchCoordInList = (arr: ReadonlyArray < Coord > ) =>
-    (c: Coord): Boolean => arr.filter(({
+    (coord: Coord): Boolean => arr.filter(({
         x,
         y
-    }) => x == c.x && y == c.y).length > 0;
+    }) => x == coord.x && y == coord.y).length > 0;
 
 /**
  * To revert an illegal movement
@@ -161,69 +181,68 @@ const getRowForLevel = (level: number): number =>
  * @param b Blocks or ReadonlyArray<SVGMetaData> to be mapped
  * @returns ReadonlyArray<Coord> Coords.
  */
-const getCoords = (b: Blocks | ReadonlyArray < SVGMetaData > ): ReadonlyArray < Coord > =>
-    b instanceof Blocks ? b.cubes.map(({
+const getCoords = (block: Blocks | ReadonlyArray < SVGMetaData > ): ReadonlyArray < Coord > =>
+    block instanceof Blocks ? block.cubes.map(({
         coord
-    }) => coord) : b.map(({
+    }) => coord) : block.map(({
         coord
     }) => coord);
-
-
-/**
- * To select most top or most left cube
- * @param is isTop or isLeft
- * @param c1 Coord Coord 1
- * @param c2 Coord Coord 2
- * @param f function that map coord into number
- * @returns Coord left most? or top? coord
- */
-// is ? (f(c1) < f(c2) ? c2 : c1) : (f(c1) > f(c2) ? c2 : c1)
-const selectiveChoosing = (is: boolean) => (c1: Coord) => (c2: Coord) => (f: (c: Coord) => Number): Coord =>
-    xor(is)(f(c1) > f(c2)) ? c2 : c1
-
-/**
- * XOR gate
- * @param b1 boolean 1
- * @param b2 boolean 2
- * @returns boolean b1 xor b2
- */
-const xor = (b1: boolean) => (b2: boolean) => (b1 || !b2) && (!b1 || b2);
 
 /**
  * Function that return blocks after applying movement
  * @param b Blocks to be apply movement
  * @returns Blocks new block
  */
-const applyMovement = (b: Blocks) => (m: Movement): Blocks => {
-    const newRelativeCoord: ReadonlyArray < Coord > = b.relativeCoords.map(rotate(m.clockwise));
+const applyMovement = (block: Blocks) => (move: Movement): Blocks => {
+    const newRelativeCoord: ReadonlyArray < Coord > = block.relativeCoords.map(rotate(move.clockwise));
     //Apply substraction to old relative coord and new relative coord to get difference
-    const diffCoord: ReadonlyArray < Coord > = b.relativeCoords.map((coord, index) =>
+    const diffCoord: ReadonlyArray < Coord > = block.relativeCoords.map((coord, index) =>
         ({
             x: newRelativeCoord[index].x - coord.x,
             y: newRelativeCoord[index].y - coord.y
         }));
 
-    return new Blocks(b.shape,
-        b.cubes.map((cube, index) => moveSVG({
-            vertical: m.gravity + diffCoord[index].y,
-            horizontal: m.horizontal + diffCoord[index].x
+    return new Blocks(block.shape,
+        block.cubes.map((cube, index) => moveSVG({
+            vertical: move.gravity + diffCoord[index].y,
+            horizontal: move.horizontal + diffCoord[index].x
         })(cube)),
-        b.color,
+        block.color,
         newRelativeCoord,
-        (b.quadrant + m.clockwise) % 4);
+        (block.quadrant + move.clockwise) % 4);
 }
 
 //Lazy evaluation random choice
-const randomSelect = (arr: ReadonlyArray < any > ) => () => {
-    const l = RNG.hash(Date.now());
-    const r = RNG.scale(l)(arr.length);
-    return arr[r]
+const randomSelect = <T>(arr: ReadonlyArray < T > ) => () => {
+    const seed = RNG.hash(Date.now());
+    const range = RNG.scale(seed)(arr.length);
+    return arr[range]
 }
 
 //Combinators
-const I = (i: any) => i;
-const K = (x: any) => (y: any) => x;
-const DOUBLE = (x: any) => (y: any) => (param: any) => {
+const I = <T>(i:T) => i;
+const K = <T>(x: T) => (y: T) => x;
+const DOUBLE = <T,U>(x: (x:T) => U) => (y: (y:T) => U) => (param: T) => {
     x(param);
     y(param);
 };
+
+//Provided by FIT 2102 Workshop 4(modified)
+class RNG {
+    // LCG using GCC's constants
+    private static m = 0x80000000; // 2**31
+    private static a = 1103515245;
+    private static c = 12345;
+  
+    /**
+     * Call `hash` repeatedly to generate the sequence of hashes.
+     * @param seed 
+     * @returns a hash of the seed
+     */
+    public static hash = (seed: number) => (RNG.a * seed + RNG.c) % RNG.m;
+  
+    /**
+  h    * Takes hash value and scales it to the range [0, max]
+     */
+    public static scale = (hash: number) => (max: number) => Math.floor((max * hash) / (RNG.m - 1)) ;
+  }

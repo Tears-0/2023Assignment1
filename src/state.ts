@@ -1,9 +1,9 @@
 import { Constants } from "./constant";
-import { Blocks, Control, Coord, Movement, SVGMetaData, State, Status, TestResult } from "./types";
+import { BlockShape, Blocks, Control, Coord, Movement, SVGMetaData, State, Status, TestResult } from "./types";
 import { selectMostCube, searchCoordInList, revertControl, moveSVG, levelCalculate, createBlock, applyMovement, getCoords, randomSelect } from "./utility";
 export { initialState, reduceState };
 
-const randomSelectBlock = randomSelect(Constants.BLOCK_TYPE);
+const randomSelectBlock: ()=>BlockShape = randomSelect(Constants.BLOCK_TYPE);
 /** State processing */
 const initialState: State = {
     gameEnd: false,
@@ -22,168 +22,164 @@ const initialState: State = {
     rowCleared: 0
 }as State;
 
-const reduceState = (s: State, c: Number | Movement | Control): State => {
+const reduceState = (state: State, control: Number | Movement | Control): State => {
     //If user input, apply to current block
-    if (c instanceof Movement) {
-        return moveBlock(c)(s).state
+    if (control instanceof Movement) {
+        return moveBlock(control)(state).state
     }
     //If user input restart and game has ended, restart game
-    else if (c instanceof Control) {
-        if (c.restart && s.gameEnd) {
+    else if (control instanceof Control) {
+        if (control.restart && state.gameEnd) {
             return {
-                ...s,
+                ...state,
                 gameEnd: false,
                 currentBlock: createBlock(randomSelectBlock())(`B0`)(),
                 cubePreview: createBlock(randomSelectBlock())(`B1`)(true),
             }as State
         }
-        return s
+        return state
     }
     //Else see should we tick, if current level is higher, faster it ticks.
-    return (c as number % Math.max(11 - s.level, 1) == 0 ? tick(s) : s);
+    return (control as number % Math.max(11 - state.level, 1) == 0 ? tick(state) : state);
 }
 
 /**
  * Updates the state by proceeding with one time step.
  *
- * @param s Current state
+ * @param state Current state
  * @returns Updated state
  */
-const tick = (s: State): State => {
-    if (s.gameEnd) return {
+const tick = (state: State): State => {
+    if (state.gameEnd) return {
         ...initialState,
         gameEnd: true,
-        highScore: s.score > s.highScore ? s.score : s.highScore,
+        highScore: state.score > state.highScore ? state.score : state.highScore,
     }
 
     const applyGravity = moveBlock(new Movement(0, false, 1, 0, false));
 
     //If currentBlock is null, create a new one
-    return !s.currentBlock ?
+    return !state.currentBlock ?
         applyGravity({
-            ...s,
+            ...state,
             //Here use preview shape
-            currentBlock: createBlock(s.cubePreview.shape)(`B${s.totalBlockGenerated}`)(),
+            currentBlock: createBlock(state.cubePreview.shape)(`B${state.totalBlockGenerated}`)(),
 
-            cubePreviewDead: s.cubePreview.cubes,
+            cubePreviewDead: state.cubePreview.cubes,
 
-            cubePreview: createBlock(randomSelectBlock())(`B${s.totalBlockGenerated}`)(true),
+            cubePreview: createBlock(randomSelectBlock())(`B${state.totalBlockGenerated}`)(true),
 
             skipCollide: 5,
-            totalBlockGenerated: s.totalBlockGenerated + 1
+            totalBlockGenerated: state.totalBlockGenerated + 1
         }).state :
         //If it is normal game, apply gravity to current block
-        applyGravity(s).state;
+        applyGravity(state).state;
 };
 
 
 /**
  * Function to move current block with provided control set
- * @param c Movement control set provided
- * @param s State current state
+ * @param control Movement control set provided
+ * @param state State current state
  * @returns Status new State
  */
-const moveBlock = (c: Movement) => (s: State): Status => {
-    if (s.currentBlock && !s.gameEnd) {
+const moveBlock = (control: Movement) => (state: State): Status => {
+    if (state.currentBlock && !state.gameEnd) {
         //Apply the movement provided
         const newState: State = {
-            ...s,
+            ...state,
             //Always create new block while swapping current block and block on hold with same shape
-            blockOnHold: c.hold && !s.swapped ?
-                createBlock(s.currentBlock.shape)('hold')(true) : s.blockOnHold,
+            blockOnHold: control.hold && !state.swapped ?
+                createBlock(state.currentBlock.shape)('hold')(true) : state.blockOnHold,
 
             //Test if ready to swap with block on hold
-            currentBlock: c.hold && !s.swapped ?
-                (s.blockOnHold ?
-                    createBlock(s.blockOnHold.shape)(`B${s.totalBlockGenerated}`)() :
-                    null) : applyMovement(s.currentBlock)(c),
+            currentBlock: control.hold && !state.swapped ?
+                (state.blockOnHold ?
+                    createBlock(state.blockOnHold.shape)(`B${state.totalBlockGenerated}`)() :
+                    null) : applyMovement(state.currentBlock)(control),
 
-            swapped: c.hold || s.swapped,
-            cubeDead: c.hold && !s.swapped ? s.currentBlock.cubes : [],
+            swapped: control.hold || state.swapped,
+            cubeDead: control.hold && !state.swapped ? state.currentBlock.cubes : [],
 
-            totalBlockGenerated: c.hold && !s.swapped ?
-                s.totalBlockGenerated + 1 : s.totalBlockGenerated,
+            totalBlockGenerated: control.hold && !state.swapped ?
+                state.totalBlockGenerated + 1 : state.totalBlockGenerated,
 
-            skipCollide: c.push ? 0 : s.skipCollide
+            skipCollide: control.push ? 0 : state.skipCollide
         }
 
         //Indicates whether is the movement valid
         const result: Status =
             newState.currentBlock ?
-            collide(newState)(c)(newState.currentBlock as Blocks) : {
+            collide(newState)(control)(newState.currentBlock as Blocks) : {
                 updated: true,
                 state: newState
             };
 
         //If it is to push, move the block further downward.
-        return c.push ?
+        return control.push ?
             moveBlock(new Movement(0, true, 1, 0, false))(result.state) :
             result;
     }
 
     return {
         updated: false,
-        state: s
+        state: state
     };
 }
 
 /**
  * Function that legalise illegal move and handle collision
- * @param s State current state
- * @param c Movement control set provided
+ * @param state State current state
+ * @param control Movement control set provided
  * @returns Status new state
  */
-const collide = (s: State) => (c: Movement) => (b: Blocks): Status => {
-    const testResult: TestResult = testIsValid(s)(b);
+const collide = (state: State) => (control: Movement) => (b: Blocks): Status => {
+    const testResult: TestResult = testIsValid(state)(b);
     //If the block has impact on other block or wall and is rotating, try wallkick 
     if (testResult.hitBlock) {
-        if (c.clockwise != 0) {
+        if (control.clockwise != 0) {
             const validKick: ReadonlyArray < Movement > =
                 (b.shape != 'I' ?
                     Constants.WALL_KICK_OFFSET[b.quadrant] :
                     Constants.WALL_KICK_OFFSET_I[b.quadrant])
-                .map(({
-                    x,
-                    y
-                }) => new Movement(x, false, y, 0, false))
-                .filter(movement =>
-                    !testIsValid(s)(applyMovement(b)(movement)).hitBlock);
+                .map(({x,y}) => new Movement(x, false, y, 0, false))
+                .filter(movement => !testIsValid(state)(applyMovement(b)(movement)).hitBlock);
 
-            if (validKick.length > 0) return moveBlock(validKick[0])(s);
+            if (validKick.length > 0) return moveBlock(validKick[0])(state);
         }
         //If unable to kick, revert control.
-        return moveBlock(revertControl(c))(s);
+        return moveBlock(revertControl(control))(state);
     }
-    if (testResult.hitBottom) return handleCollision(s)(b);
+    if (testResult.hitBottom) return handleCollision(state)(b);
 
     return {
         updated: false,
-        state: s
+        state: state
     };
 }
 
 /**
  * Function that determines that a block is in illegal position (Out of bound, duplicate position).
- * @param s State current state
- * @param c Movement previous or next movement to be apply on current block
+ * @param state State current state
+ * @param control Movement previous or next movement to be apply on current block
  * @param b Blocks current block
- * @param beforeMovement Boolean is c provided applied?
+ * @param beforeMovement Boolean is control provided applied?
  * @returns TestResult indicates block is out of bound, hit another block or hit bottom
  */
-const testIsValid = (s: State) => (b: Blocks): TestResult => {
-    const globalCoords: ReadonlyArray < Coord > = getCoords(s.cubeAlive);
+const testIsValid = (state: State) => (b: Blocks): TestResult => {
+    const globalCoords: ReadonlyArray < Coord > = getCoords(state.cubeAlive);
     const blockCoords: ReadonlyArray < Coord > = getCoords(b);
 
     //Indicates blocks has been out of bound, or has same position as other block
     const impact: boolean =
-        (selectMostCube(false)(b)(c => c.x) > Constants.GRID_WIDTH - 1) ||
-        (selectMostCube(true)(b)(c => c.x) < 0) ||
-        (selectMostCube(false)(b)(c => c.y) > Constants.GRID_HEIGHT - 1) ||
+        (selectMostCube(false)(b)(control => control.x) > Constants.GRID_WIDTH - 1) ||
+        (selectMostCube(true)(b)(control => control.x) < 0) ||
+        (selectMostCube(false)(b)(control => control.y) > Constants.GRID_HEIGHT - 1) ||
         (blockCoords.filter(searchCoordInList(globalCoords)).length > 0);
 
     //Indicates blocks has something else bottom.
     const bottom: boolean =
-        (selectMostCube(false)(b)(x => x.y) > Constants.GRID_HEIGHT - 2) ||
+        (selectMostCube(false)(b)(coord => coord.y) > Constants.GRID_HEIGHT - 2) ||
         (blockCoords.filter(({
                 x,
                 y
@@ -201,30 +197,30 @@ const testIsValid = (s: State) => (b: Blocks): TestResult => {
 
 /**
  * Function that handle collision, release current block, remove full row, score and level calculation
- * @param s State current state
+ * @param state State current state
  * @returns Status new state
  */
-const handleCollision = (s: State) => (b: Blocks): Status => {
-    if (s.skipCollide > 0) return {
+const handleCollision = (state: State) => (b: Blocks): Status => {
+    if (state.skipCollide > 0) return {
         updated: false,
         state: {
-            ...s,
-            skipCollide: s.skipCollide - 1
+            ...state,
+            skipCollide: state.skipCollide - 1
         }
     }as Status;
     //If collide at roof, game end. 
-    if (selectMostCube(false)(b)(c => c.y) < 1)
+    if (selectMostCube(false)(b)(control => control.y) < 1)
         return {
             updated: true,
             state: {
-                ...s,
+                ...state,
                 gameEnd: true
             }
         }
 
     //Map all cubes into 2d array by its position.
     const allCubes: ReadonlyArray < ReadonlyArray < SVGMetaData >> =
-        s.cubeAlive.concat(b.cubes)
+        state.cubeAlive.concat(b.cubes)
         .reduce((acc, cube) =>
             acc.map((arr, index) =>
                 index == Constants.GRID_HEIGHT - cube.coord.y - 1 ? arr.concat([cube]) : arr),
@@ -259,15 +255,15 @@ const handleCollision = (s: State) => (b: Blocks): Status => {
     return {
         updated: true,
         state: {
-            ...s,
+            ...state,
             gameEnd: reachedTop && finalState.delta == 0,
             currentBlock: null,
             swapped: false,
             cubeAlive: finalState.result,
             cubeDead: finalState.deadCube,
-            score: s.score + Constants.SCORE_TABLE[finalState.delta] * s.level,
-            level: levelCalculate(s.rowCleared + finalState.delta)() + 1,
-            rowCleared: s.rowCleared + finalState.delta
+            score: state.score + Constants.SCORE_TABLE[finalState.delta] * state.level,
+            level: levelCalculate(state.rowCleared + finalState.delta)() + 1,
+            rowCleared: state.rowCleared + finalState.delta
         }as State
     }
 }
