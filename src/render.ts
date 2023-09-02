@@ -1,6 +1,7 @@
-import { Coord, State } from "./types";
+import { Coord, SVGMetaData, State } from "./types";
 import { Block, Viewport } from "./constant";
-export { show, hide, createSvgElement, render, gameover, createCube };
+import { DOUBLE, I } from "./utility";
+export { show, hide, render, gameover, createCube };
 /** Rendering (side effects) */
 // Canvas elements
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
@@ -24,6 +25,9 @@ preview.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
 preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 holdBar.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
 holdBar.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
+
+const modifyMove = (x:SVGMetaData) => modifySVG(moveSVG(x.coord));
+
 /**
    * Renders the current state to the canvas.
    *
@@ -36,44 +40,35 @@ const render = (s: State) => {
   scoreText.innerHTML = s.score.toString();
   levelText.innerHTML = s.level.toString();
   highScoreText.innerHTML = s.highScore.toString();
+
   if(s.cubeAlive.length == 0) {
     svg.innerHTML = '';
     svg.appendChild(gameover)
     preview.innerHTML = '';
   }
 
-  s.blockOnHold ? s.blockOnHold.cubes.forEach(data => {
-    let e = document.getElementById(data.id)
-    e ? moveSVG(data.coord)(e) : holdBar.appendChild(createCube(data.coord)(data.colour)(data.id));
-    e ? setColor(e)(data.colour) : null
-  }) : holdBar.innerHTML = '';
+  //Render block on hold
+  s.blockOnHold ? s.blockOnHold.cubes.forEach(data => 
+    modifySVG(DOUBLE(moveSVG(data.coord))(setColor(data.colour)))(x=>holdBar.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : 
+    holdBar.innerHTML = '';
 
-  s.cubeDead.forEach(data => {
-    let e = document.getElementById(data.id) 
-    e ? svg.removeChild(e): null});
+  s.cubeDead.forEach(modifySVG(x => svg.removeChild(x))(I));
 
-  s.cubeAlive.forEach(data => {
-    let e = document.getElementById(data.id)
-    e ? moveSVG(data.coord)(e) : svg.appendChild(createCube(data.coord)(data.colour)(data.id))});
+  s.cubeAlive.forEach(data => 
+    modifyMove(data)(x=>svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data));
 
-  s.cubePreview.cubes.forEach(data => {
-    let e = document.getElementById(data.id)
-    !e ?  preview.appendChild(createCube(data.coord)(data.colour)(data.id)) : null;
-  });
+  s.cubePreview.cubes.forEach(modifySVG(I)(x=>preview.appendChild(createCube(x.coord)(x.colour)(x.id))));
 
-  s.cubePreviewDead.forEach(data => {
-    if(preview.children.length > 4){
-    let e = document.getElementById(data.id) 
-    e ? preview.removeChild(e): null
-    }
-  });
+  s.cubePreviewDead.forEach(modifySVG(x => preview.children.length > 4 ? preview.removeChild(x) : I(x))(I));
 
-  if(s.currentBlock) s.currentBlock.cubes.forEach(data => {
-    let e = document.getElementById(data.id)
-    e ? moveSVG(data.coord)(e) : svg.appendChild(createCube(data.coord)(data.colour)(data.id));
-  });
+  s.currentBlock ? s.currentBlock.cubes.forEach(data => 
+    modifyMove(data)(x=>svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : null;
 };
 
+const modifySVG = (f1: (s:HTMLElement) => any) => (f2: (s:SVGMetaData) => any) => (data: SVGMetaData) =>{
+  let element = document.getElementById(data.id);
+  element ? f1(element) : f2(data);
+};
 
 /**
  * Displays a SVG element on the canvas. Brings to foreground.
@@ -143,4 +138,5 @@ const moveSVG = (coord: Coord) => (svg: HTMLElement) => {
  * @param svg HTMLElement svg to be modified
  * @param color String color 
  */
-const setColor = (svg: HTMLElement) => (color: string) => svg.setAttribute('style', `fill: ${color}`);
+const setColor = (color: string) => (svg: HTMLElement) =>
+  svg.setAttribute('style', `fill: ${color}`);
