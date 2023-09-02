@@ -25,8 +25,8 @@ import { moveBlock } from "./state";
 const initialState: State = {
   gameEnd: false,
   cubeAlive: [],
-  currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
-  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`,true),
+  currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B0`)(),
+  cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B0`)(true),
   blockOnHold: null,
   swapped: false,
   score: 0,
@@ -56,9 +56,9 @@ const tick = (s: State): State => {
     s = {
       ...s,
       //Here use preview shape
-      currentBlock: createBlock(s.cubePreview.shape,`B${s.totalBlockGenerated}`),
+      currentBlock: createBlock(s.cubePreview.shape)(`B${s.totalBlockGenerated}`)(),
       cubePreviewDead: s.cubePreview.cubes,
-      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B${s.totalBlockGenerated}`,true),
+      cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B${s.totalBlockGenerated}`)(true),
       skipCollide: 5,
       totalBlockGenerated: s.totalBlockGenerated + 1
     }
@@ -85,8 +85,8 @@ export function main() {
           return {
             ...acc,
             gameEnd: false,
-            currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B0`),
-            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)],`B1`,true),
+            currentBlock: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B0`)(),
+            cubePreview: createBlock(Constants.BLOCK_TYPE[Math.floor(Math.random()*Constants.BLOCK_TYPE.length)])(`B1`)(true),
           } as State
         }
         return acc

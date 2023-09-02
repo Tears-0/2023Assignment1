@@ -9,7 +9,7 @@ export { createBlock, moveSVG, searchCoordInList, selectMostCube, revertControl,
  * @param preview Boolean is preview?
  * @returns Blocks created
  */
-const createBlock = (shape: string, id: string, preview: boolean = false): Blocks =>{
+const createBlock = (shape: string) => (id: string) =>  (preview: boolean = false): Blocks =>{
     const xDelta = preview ? -1 : 0;
     const yDelta = preview ? 2 : 0;
     if(shape === 'T'){
@@ -103,12 +103,32 @@ const getRowForLevel = (level: number): number => level <= 0 ? 0 : (getRowForLev
  */
 const getCoords = (b: Blocks | ReadonlyArray<SVGMetaData>): ReadonlyArray<Coord> => b instanceof Blocks ? b.cubes.map(({coord}) => coord) : b.map(({coord}) => coord);
 
-// is ? (f(acc) < f(data) ? data : acc) : (f(acc) > f(data) ? data : acc)
-const selectiveChoosing = (is: boolean) => (acc: Coord) => (data: Coord) => (f: (c:Coord)=> Number) => xor(is)(f(acc) > f(data)) ? data : acc 
 
+/**
+ * To select most top or most left cube
+ * @param is isTop or isLeft
+ * @param c1 Coord Coord 1
+ * @param c2 Coord Coord 2
+ * @param f function that map coord into number
+ * @returns Coord left most? or top? coord
+ */
+// is ? (f(c1) < f(c2) ? c2 : c1) : (f(c1) > f(c2) ? c2 : c1)
+const selectiveChoosing = (is: boolean) => (c1: Coord) => (c2: Coord) => (f: (c:Coord)=> Number):Coord => xor(is)(f(c1) > f(c2)) ? c2 : c1 
+
+/**
+ * XOR gate
+ * @param b1 boolean 1
+ * @param b2 boolean 2
+ * @returns boolean b1 xor b2
+ */
 const xor = (b1:boolean) => (b2: boolean) => (b1 || !b2) && (!b1 || b2);
 
-const applyMovement = (b: Blocks) => (m: Movement) => {
+/**
+ * Function that return blocks after applying movement
+ * @param b Blocks to be apply movement
+ * @returns Blocks new block
+ */
+const applyMovement = (b: Blocks) => (m: Movement): Blocks => {
     const newRelativeCoord: ReadonlyArray<Coord> = b.relativeCoords.map(rotate(m.clockwise));
     //Apply substraction to old relative coord and new relative coord to get difference
     const diffCoord: ReadonlyArray<Coord> = b.relativeCoords.map((coord, index) => ({x: newRelativeCoord[index].x-coord.x, y: newRelativeCoord[index].y-coord.y}));

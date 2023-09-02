@@ -16,8 +16,8 @@ const moveBlock = (c: Movement) => (s: State): Status  => {
         const newState: State = {
             ...s,
             //Always create new block while swapping current block and block on hold with same shape
-            blockOnHold: c.hold && !s.swapped ?  createBlock(s.currentBlock.shape,'hold',true) : s.blockOnHold,
-            currentBlock: c.hold && !s.swapped ? (s.blockOnHold ? createBlock(s.blockOnHold.shape, `B${s.totalBlockGenerated}`) : null) : applyMovement(s.currentBlock)(c),
+            blockOnHold: c.hold && !s.swapped ?  createBlock(s.currentBlock.shape)('hold')(true) : s.blockOnHold,
+            currentBlock: c.hold && !s.swapped ? (s.blockOnHold ? createBlock(s.blockOnHold.shape)(`B${s.totalBlockGenerated}`)() : null) : applyMovement(s.currentBlock)(c),
             swapped: c.hold || s.swapped,
             cubeDead: c.hold && !s.swapped ? s.currentBlock.cubes : [],
             totalBlockGenerated: c.hold && !s.swapped ? s.totalBlockGenerated + 1 : s.totalBlockGenerated,
