@@ -5,13 +5,13 @@ export { show, hide, render, gameover, createCube };
 /** Rendering (side effects) */
 // Canvas elements
 const svg = document.querySelector("#svgCanvas") as SVGGraphicsElement &
-HTMLElement;
+  HTMLElement;
 const preview = document.querySelector("#svgPreview") as SVGGraphicsElement &
-HTMLElement;
+  HTMLElement;
 const holdBar = document.querySelector("#svgHold") as SVGGraphicsElement &
-HTMLElement;
+  HTMLElement;
 const gameover = document.querySelector("#gameOver") as SVGGraphicsElement &
-HTMLElement;
+  HTMLElement;
 const container = document.querySelector("#main") as HTMLElement;
 
 // Text fields
@@ -26,46 +26,49 @@ preview.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 holdBar.setAttribute("height", `${Viewport.PREVIEW_HEIGHT}`);
 holdBar.setAttribute("width", `${Viewport.PREVIEW_WIDTH}`);
 
-const modifyMove = (x:SVGMetaData) => modifySVG(moveSVG(x.coord));
+const modifyMove = (x: SVGMetaData) => modifySVG(moveSVG(x.coord));
 
 /**
-   * Renders the current state to the canvas.
-   *
-   * In MVC terms, this updates the View using the Model.
-   *
-   * @param s Current state
-   */
+ * Renders the current state to the canvas.
+ *
+ * In MVC terms, this updates the View using the Model.
+ *
+ * @param s Current state
+ */
 const render = (s: State) => {
   // Add blocks to the main grid canvas
   scoreText.innerHTML = s.score.toString();
   levelText.innerHTML = s.level.toString();
   highScoreText.innerHTML = s.highScore.toString();
 
-  if(s.cubeAlive.length == 0) {
+  if (s.cubeAlive.length == 0) {
     svg.innerHTML = '';
     svg.appendChild(gameover)
     preview.innerHTML = '';
   }
 
   //Render block on hold
-  s.blockOnHold ? s.blockOnHold.cubes.forEach(data => 
-    modifySVG(DOUBLE(moveSVG(data.coord))(setColor(data.colour)))(x=>holdBar.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : 
+  s.blockOnHold ? 
+    s.blockOnHold.cubes.forEach(
+      data => modifySVG(DOUBLE(moveSVG(data.coord))(setColor(data.colour)))(x => holdBar.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : 
     holdBar.innerHTML = '';
 
   s.cubeDead.forEach(modifySVG(x => svg.removeChild(x))(I));
 
-  s.cubeAlive.forEach(data => 
-    modifyMove(data)(x=>svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data));
+  s.cubeAlive.forEach(
+    data => modifyMove(data)(x => svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data));
 
-  s.cubePreview.cubes.forEach(modifySVG(I)(x=>preview.appendChild(createCube(x.coord)(x.colour)(x.id))));
+  s.cubePreview.cubes.forEach(modifySVG(I)(x => preview.appendChild(createCube(x.coord)(x.colour)(x.id))));
 
   s.cubePreviewDead.forEach(modifySVG(x => preview.children.length > 4 ? preview.removeChild(x) : I(x))(I));
 
-  s.currentBlock ? s.currentBlock.cubes.forEach(data => 
-    modifyMove(data)(x=>svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : null;
+  s.currentBlock ? 
+    s.currentBlock.cubes.forEach(
+      data => modifyMove(data)(x => svg.appendChild(createCube(x.coord)(x.colour)(x.id)))(data)) : 
+    null;
 };
 
-const modifySVG = (f1: (s:HTMLElement) => any) => (f2: (s:SVGMetaData) => any) => (data: SVGMetaData) =>{
+const modifySVG = (f1: (s: HTMLElement) => any) => (f2: (s: SVGMetaData) => any) => (data: SVGMetaData) => {
   let element = document.getElementById(data.id);
   element ? f1(element) : f2(data);
 };
@@ -75,37 +78,37 @@ const modifySVG = (f1: (s:HTMLElement) => any) => (f2: (s:SVGMetaData) => any) =
  * @param elem SVG element to display
  */
 const show = (elem: SVGGraphicsElement) => {
-    elem.setAttribute("visibility", "visible");
-    elem.parentNode!.appendChild(elem);
-  };
-  
-  /**
-   * Hides a SVG element on the canvas.
-   * @param elem SVG element to hide
-   */
-  const hide = (elem: SVGGraphicsElement) =>
-    elem.setAttribute("visibility", "hidden");
-  
-  /**
-   * Creates an SVG element with the given properties.
-   *
-   * See https://developer.mozilla.org/en-US/docs/Web/SVG/Element for valid
-   * element names and properties.
-   *
-   * @param namespace Namespace of the SVG element
-   * @param name SVGElement name
-   * @param props Properties to set on the SVG element
-   * @returns SVG element
-   */
-  const createSvgElement = (
-    namespace: string | null,
-    name: string,
-    props: Record<string, string> = {}
-  ) => {
-    const elem = document.createElementNS(namespace, name) as SVGElement;
-    Object.entries(props).forEach(([k, v]) => elem.setAttribute(k, v));
-    return elem;
-  };
+  elem.setAttribute("visibility", "visible");
+  elem.parentNode!.appendChild(elem);
+};
+
+/**
+ * Hides a SVG element on the canvas.
+ * @param elem SVG element to hide
+ */
+const hide = (elem: SVGGraphicsElement) =>
+  elem.setAttribute("visibility", "hidden");
+
+/**
+ * Creates an SVG element with the given properties.
+ *
+ * See https://developer.mozilla.org/en-US/docs/Web/SVG/Element for valid
+ * element names and properties.
+ *
+ * @param namespace Namespace of the SVG element
+ * @param name SVGElement name
+ * @param props Properties to set on the SVG element
+ * @returns SVG element
+ */
+const createSvgElement = (
+  namespace: string | null,
+  name: string,
+  props: Record < string, string > = {}
+) => {
+  const elem = document.createElementNS(namespace, name) as SVGElement;
+  Object.entries(props).forEach(([k, v]) => elem.setAttribute(k, v));
+  return elem;
+};
 
 /**
  *  Function that create new svg cube with coord, color and id
@@ -129,8 +132,8 @@ const createCube = (coord: Coord) => (color: string) => (id: string): SVGElement
  * @param svg HTMLElement svg to be moved
  */
 const moveSVG = (coord: Coord) => (svg: HTMLElement) => {
-  svg.setAttribute('x',`${Block.WIDTH * coord.x}`);
-  svg.setAttribute('y',`${Block.HEIGHT * coord.y}`);
+  svg.setAttribute('x', `${Block.WIDTH * coord.x}`);
+  svg.setAttribute('y', `${Block.HEIGHT * coord.y}`);
 }
 
 /**

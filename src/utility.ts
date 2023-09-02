@@ -9,10 +9,10 @@ export { createBlock, moveSVG, searchCoordInList, selectMostCube, revertControl,
  * @param preview Boolean is preview?
  * @returns Blocks created
  */
-const createBlock = (shape: string) => (id: string) =>  (preview: boolean = false): Blocks =>{
+const createBlock = (shape: string) => (id: string) => (preview: boolean = false): Blocks => {
     const xDelta = preview ? -1 : 0;
     const yDelta = preview ? 2 : 0;
-    if(shape === 'T'){
+    if (shape === 'T') {
         return new Blocks(shape,
             [{id:`${id}-1-${preview ? 'preview' : 'real'}`,coord:{x:3+xDelta,y:0+yDelta},colour: 'purple'},
             {id:`${id}-2-${preview ? 'preview' : 'real'}`,coord:{x:4+xDelta,y:0+yDelta},colour: 'purple'},
@@ -81,13 +81,16 @@ const createBlock = (shape: string) => (id: string) =>  (preview: boolean = fals
  * @param svg SVGMetaData which represent a cube
  * @returns SVGMetaData that has been shifted with control set provided amount
  */
-const moveSVG = (control: Readonly<{vertical: number, horizontal: number}>) =>  (svg: SVGMetaData): SVGMetaData => ({
-        ...svg,
-        coord: {
-            x: svg.coord.x + control.horizontal,
-            y: svg.coord.y + control.vertical
-        }
-    });
+const moveSVG = (control: Readonly < {
+    vertical: number,
+    horizontal: number
+} > ) => (svg: SVGMetaData): SVGMetaData => ({
+    ...svg,
+    coord: {
+        x: svg.coord.x + control.horizontal,
+        y: svg.coord.y + control.vertical
+    }
+});
 
 /**
  * Select left most cube or right most cube for a provided blocks
@@ -96,8 +99,8 @@ const moveSVG = (control: Readonly<{vertical: number, horizontal: number}>) =>  
  * @param f Mapping function
  * @returns Coord left most coord or right most coord
  */
-const selectMostCube = (is: boolean) => (b: Blocks) => (f: (c:Coord)=>number): number => 
-    f(getCoords(b).reduce((acc: Coord,data: Coord) => selectiveChoosing(is)(acc)(data)(f)));
+const selectMostCube = (is: boolean) => (b: Blocks) => (f: (c: Coord) => number): number =>
+    f(getCoords(b).reduce((acc: Coord, data: Coord) => selectiveChoosing(is)(acc)(data)(f)));
 
 /**
  * A search function indicating whether a coord is in a list.
@@ -105,16 +108,19 @@ const selectMostCube = (is: boolean) => (b: Blocks) => (f: (c:Coord)=>number): n
  * @param arr list to be searched.
  * @returns true if coord is in the list, false otherwise.
  */
-const searchCoordInList = (arr: ReadonlyArray<Coord>) => 
-    (c: Coord): Boolean => arr.filter(({x,y}) => x == c.x && y == c.y).length > 0;
+const searchCoordInList = (arr: ReadonlyArray < Coord > ) =>
+    (c: Coord): Boolean => arr.filter(({
+        x,
+        y
+    }) => x == c.x && y == c.y).length > 0;
 
 /**
  * To revert an illegal movement
  * @param c Movement
  * @returns An inverted movement
  */
-const revertControl = (c: Movement): Movement => 
-    new Movement(-c.horizontal,false,-c.gravity, -c.clockwise, false);
+const revertControl = (c: Movement): Movement =>
+    new Movement(-c.horizontal, false, -c.gravity, -c.clockwise, false);
 
 /**
  *  Function that helps rotate the Blocks.
@@ -123,8 +129,14 @@ const revertControl = (c: Movement): Movement =>
  * @param clockwise Number representing clockwise if 1, counterclockwise if -1, none if 0
  * @returns new Coord
  */
-const rotate = (clockwise: number) => (c: Coord): Coord => 
-    clockwise == 0 ? c: clockwise > 0 ? {x: -c.y,y: c.x} : {x: c.y,y: -c.x};
+const rotate = (clockwise: number) => (c: Coord): Coord =>
+    clockwise == 0 ? c : clockwise > 0 ? {
+        x: -c.y,
+        y: c.x
+    } : {
+        x: c.y,
+        y: -c.x
+    };
 
 /**
  * Calculate the provided row number belonging level
@@ -133,24 +145,28 @@ const rotate = (clockwise: number) => (c: Coord): Coord =>
  * @param temp Number number to get row needed to level up
  * @returns Number level
  */
-const levelCalculate = (rowNumber: number) => (temp: number = 1): number => 
-    getRowForLevel(temp) > rowNumber ? temp - 1 : levelCalculate(rowNumber) (temp + 1);
+const levelCalculate = (rowNumber: number) => (temp: number = 1): number =>
+    getRowForLevel(temp) > rowNumber ? temp - 1 : levelCalculate(rowNumber)(temp + 1);
 
 /**
  * Calculate how much row needed for provided number of level
  * @param level Number level
  * @returns Number row needed to clear for the level
  */
-const getRowForLevel = (level: number): number => 
-    level <= 0 ? 0 : (getRowForLevel(level-1) + Math.min(level, 10) * 10);
+const getRowForLevel = (level: number): number =>
+    level <= 0 ? 0 : (getRowForLevel(level - 1) + Math.min(level, 10) * 10);
 
 /**
  * Map all cubes into coords
  * @param b Blocks or ReadonlyArray<SVGMetaData> to be mapped
  * @returns ReadonlyArray<Coord> Coords.
  */
-const getCoords = (b: Blocks | ReadonlyArray<SVGMetaData>): ReadonlyArray<Coord> => 
-    b instanceof Blocks ? b.cubes.map(({coord}) => coord) : b.map(({coord}) => coord);
+const getCoords = (b: Blocks | ReadonlyArray < SVGMetaData > ): ReadonlyArray < Coord > =>
+    b instanceof Blocks ? b.cubes.map(({
+        coord
+    }) => coord) : b.map(({
+        coord
+    }) => coord);
 
 
 /**
@@ -162,8 +178,8 @@ const getCoords = (b: Blocks | ReadonlyArray<SVGMetaData>): ReadonlyArray<Coord>
  * @returns Coord left most? or top? coord
  */
 // is ? (f(c1) < f(c2) ? c2 : c1) : (f(c1) > f(c2) ? c2 : c1)
-const selectiveChoosing = (is: boolean) => (c1: Coord) => (c2: Coord) => (f: (c:Coord)=> Number):Coord => 
-    xor(is)(f(c1) > f(c2)) ? c2 : c1 
+const selectiveChoosing = (is: boolean) => (c1: Coord) => (c2: Coord) => (f: (c: Coord) => Number): Coord =>
+    xor(is)(f(c1) > f(c2)) ? c2 : c1
 
 /**
  * XOR gate
@@ -171,7 +187,7 @@ const selectiveChoosing = (is: boolean) => (c1: Coord) => (c2: Coord) => (f: (c:
  * @param b2 boolean 2
  * @returns boolean b1 xor b2
  */
-const xor = (b1:boolean) => (b2: boolean) => (b1 || !b2) && (!b1 || b2);
+const xor = (b1: boolean) => (b2: boolean) => (b1 || !b2) && (!b1 || b2);
 
 /**
  * Function that return blocks after applying movement
@@ -179,29 +195,35 @@ const xor = (b1:boolean) => (b2: boolean) => (b1 || !b2) && (!b1 || b2);
  * @returns Blocks new block
  */
 const applyMovement = (b: Blocks) => (m: Movement): Blocks => {
-    const newRelativeCoord: ReadonlyArray<Coord> = b.relativeCoords.map(rotate(m.clockwise));
+    const newRelativeCoord: ReadonlyArray < Coord > = b.relativeCoords.map(rotate(m.clockwise));
     //Apply substraction to old relative coord and new relative coord to get difference
-    const diffCoord: ReadonlyArray<Coord> = b.relativeCoords.map((coord, index) => 
-        ({x: newRelativeCoord[index].x-coord.x, y: newRelativeCoord[index].y-coord.y}));
-        
-    return new Blocks(b.shape, 
-        b.cubes.map((cube,index) => moveSVG({vertical:m.gravity + diffCoord[index].y,horizontal:m.horizontal + diffCoord[index].x})(cube)),
+    const diffCoord: ReadonlyArray < Coord > = b.relativeCoords.map((coord, index) =>
+        ({
+            x: newRelativeCoord[index].x - coord.x,
+            y: newRelativeCoord[index].y - coord.y
+        }));
+
+    return new Blocks(b.shape,
+        b.cubes.map((cube, index) => moveSVG({
+            vertical: m.gravity + diffCoord[index].y,
+            horizontal: m.horizontal + diffCoord[index].x
+        })(cube)),
         b.color,
         newRelativeCoord,
         (b.quadrant + m.clockwise) % 4);
 }
 
 //Lazy evaluation random choice
-const randomSelect = (arr: ReadonlyArray<any>) => () => {
+const randomSelect = (arr: ReadonlyArray < any > ) => () => {
     const l = RNG.hash(Date.now());
     const r = RNG.scale(l)(arr.length);
     return arr[r]
 }
 
 //Combinators
-const I = (i:any) => i;
-const K = (x:any) => (y:any) => x;
-const DOUBLE = (x:any) => (y:any) => (param:any) => {
+const I = (i: any) => i;
+const K = (x: any) => (y: any) => x;
+const DOUBLE = (x: any) => (y: any) => (param: any) => {
     x(param);
     y(param);
 };
